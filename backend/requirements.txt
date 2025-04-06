@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+openai
+transformers
+torch
+python-multipart
+python-docx
+PyPDF2
+python-magic
+anthropic
+python-jose
+passlib
+pydantic
