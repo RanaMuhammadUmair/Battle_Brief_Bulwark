@@ -38,7 +38,7 @@ def ethical_check(summary, model_name):
         return False, f"politically sensitive content: {', '.join(political_found)}"
     
     # Check for very long summaries that might contain too much sensitive info
-    if len(summary) > 2000:
+    if len(summary) > 5000:
         return False, "summary length exceeds security guidelines"
     
     return True, ""

@@ -1,0 +1,25 @@
+def summarize_with_bart(text):
+    """Summarize text using BART model"""
+    try:
+        print("[BART] Starting summarization process...")
+        print(f"[BART] Input text length: {len(text.split())} words")
+
+        # Ensure the BART model is loaded
+        print("[BART] Loading model...")
+        load_models()
+        print("[BART] Model loaded successfully")
+
+        # Truncate input if it's too long
+        max_input_length = 1024     #1024
+        if len(text.split()) > max_input_length:
+            print(f"[BART] Text too long, truncating to {max_input_length} words")
+            text = " ".join(text.split()[:max_input_length])
+        
+        # Generate summary
+        print("[BART] Generating summary...")
+        summary = models["bart"](text, max_length=150, min_length=50, do_sample=False)[0]['summary_text']
+        print(f"[BART] Summary generated successfully. Length: {len(summary.split())} words")
+        return summary
+    except Exception as e:
+        print(f"[BART] ERROR: BART summarization failed: {str(e)}")
+        return f"Error: Could not generate BART summary. Bart maximum input limit is 1024 token = 3 pages approx.\n technical error: {str(e)}"

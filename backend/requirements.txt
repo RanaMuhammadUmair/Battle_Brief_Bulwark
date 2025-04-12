@@ -6,8 +6,10 @@ torch
 python-multipart
 python-docx
 PyPDF2
-python-magic
+python-magic-bin
 anthropic
 python-jose
 passlib
 pydantic
+accelerate
+tika

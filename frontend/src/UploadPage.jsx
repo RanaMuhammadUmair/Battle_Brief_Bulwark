@@ -66,6 +66,9 @@ const UploadPage = () => {
         >
           <MenuItem value="gpt4">GPT-4</MenuItem>
           <MenuItem value="bart">BART</MenuItem>
+          <MenuItem value="claude">CLAUDE</MenuItem>
+          <MenuItem value="t5">T5</MenuItem>
+      
         </Select>
       </FormControl>
       <Button

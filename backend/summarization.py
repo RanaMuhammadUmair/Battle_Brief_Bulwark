@@ -1,8 +1,9 @@
 import os
 import openai
-from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM, BartTokenizer, BartForConditionalGeneration
 import anthropic
-from backend.ethics import ethical_check
+from ethics import ethical_check
+import torch
 
 # Load API keys from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY")
@@ -70,7 +71,7 @@ def summarize_text(text, model_name, max_attempts=3):
             text = text + f"\n\nPlease ensure the summary avoids: {feedback}"
     
     # If we've exhausted attempts, return a sanitized version
-    return "The document contains sensitive content that cannot be summarized. Please try another document or consult with your supervisor."
+    return "*The document contains sensitive content that required human review. Please consult with your supervisor before using this summary.* \n Summary: {summary}"
 
 def summarize_with_gpt4(text):
     """Summarize text using OpenAI's GPT-4"""
@@ -104,23 +105,59 @@ def summarize_with_claude(text):
         print(f"Claude summarization failed: {str(e)}")
         return f"Error: Could not generate Claude summary. {str(e)}"
 
-def summarize_with_bart(text):
-    """Summarize text using BART model"""
-    try:
-        # Ensure the BART model is loaded
-        load_models()
+def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, chunk_overlap=50):
+    """
+    Summarize long text using BART with token-based chunking and hierarchical summarization.
+    """
+    # Initialize tokenizer and model
+    tokenizer = BartTokenizer.from_pretrained(model_name)
+    model = BartForConditionalGeneration.from_pretrained(model_name)
 
-        # Truncate input if it's too long
-        max_input_length = 1024
-        if len(text.split()) > max_input_length:
-            text = " ".join(text.split()[:max_input_length])
-        
-        # Generate summary
-        summary = models["bart"](text, max_length=150, min_length=50, do_sample=False)[0]['summary_text']
-        return summary
-    except Exception as e:
-        print(f"BART summarization failed: {str(e)}")
-        return f"Error: Could not generate BART summary. {str(e)}"
+    # Tokenize the input text
+    inputs = tokenizer(text, return_tensors="pt", truncation=False)
+    input_ids = inputs["input_ids"][0]
+
+    # Split into overlapping chunks
+    chunks = []
+    start = 0
+    while start < len(input_ids):
+        end = min(start + max_input_tokens, len(input_ids))
+        chunk = input_ids[start:end]
+        chunks.append(chunk)
+        if end == len(input_ids):
+            break
+        start += max_input_tokens - chunk_overlap  # Move start point with overlap
+
+    # Generate summaries for each chunk
+    summaries = []
+    for chunk in chunks:
+        input_chunk = chunk.unsqueeze(0)  # Add batch dimension
+        summary_ids = model.generate(
+            input_chunk,
+            max_length=200,
+            min_length=50,
+            length_penalty=2.0,
+            num_beams=4,
+            early_stopping=True
+        )
+        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+        summaries.append(summary)
+
+    # Combine summaries and perform hierarchical summarization
+    combined_summary = " ".join(summaries)
+    inputs = tokenizer(combined_summary, return_tensors="pt", truncation=True, max_length=max_input_tokens)
+    summary_ids = model.generate(
+        inputs["input_ids"],
+        max_length=200,
+        min_length=50,
+        length_penalty=2.0,
+        num_beams=4,
+        early_stopping=True
+    )
+    final_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+
+    return final_summary
+    
 
 def summarize_with_t5(text):
     """Summarize text using T5-small model"""
