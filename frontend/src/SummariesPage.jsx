@@ -31,7 +31,7 @@ const SummariesPage = () => {
                   Model: {summary.model}
                 </Typography>
                 <Typography variant="body1" sx={{ mt: 2, whiteSpace: "pre-wrap" }}>
-                  {summary.summary}
+                {summary.summary}
                 </Typography>
               </CardContent>
             </Card>

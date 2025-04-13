@@ -1,12 +1,25 @@
 import os
-import openai
-from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM, BartTokenizer, BartForConditionalGeneration
+from dotenv import load_dotenv
+from openai import OpenAI
+from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM, BartTokenizer, BartForConditionalGeneration, PegasusTokenizer, PegasusForConditionalGeneration
 import anthropic
 from ethics import ethical_check
 import torch
+import requests
+import runpod
+import logging
+
+# Configure logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load API keys from environment variables
-openai.api_key = os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY")
+# Load .env variables
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Set your RunPod API key
+runpod.api_key = os.getenv("RUNPOD_API_KEY")
+endpoint_id = os.getenv("YOUR_ENDPOINT_ID")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_API_KEY")
 
 # Initialize Claude client
@@ -50,13 +63,17 @@ def summarize_text(text, model_name, max_attempts=3):
         
         # Generate summary using the selected model
         if model_name.lower() == "gpt4":
-            summary = summarize_with_gpt4(text)
+            summary = summarize_with_gpt4o(text)
         elif model_name.lower() == "claude":
             summary = summarize_with_claude(text)
         elif model_name.lower() == "bart":
             summary = summarize_with_bart(text)
         elif model_name.lower() == "t5":
             summary = summarize_with_t5(text)
+        elif model_name.lower() == "google-pegasus":
+            summary = summarize_with_google_pegasus(text)
+        elif model_name.lower() == "deepseek-r1":
+            summary = summarize_with_DeepSeek_R1_runpod(text)
         else:
             return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, or T5."
         
@@ -73,21 +90,82 @@ def summarize_text(text, model_name, max_attempts=3):
     # If we've exhausted attempts, return a sanitized version
     return "*The document contains sensitive content that required human review. Please consult with your supervisor before using this summary.* \n Summary: {summary}"
 
-def summarize_with_gpt4(text):
-    """Summarize text using OpenAI's GPT-4"""
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a military intelligence analyst tasked with summarizing reports. Provide concise, accurate summaries that capture key information while maintaining appropriate security posture."},
-                {"role": "user", "content": f"Summarize this report concisely:\n\n{text}"}
-            ],
-            max_tokens=500
+
+
+def summarize_with_DeepSeek_R1_runpod(text):
+    logger.info("Summarizing with DeepSeek-R1-Distill-Qwen-1.5B model on RunPod")
+    summarize_text= " "
+
+    url = f"https://api.runpod.ai/v2/{endpoint_id}/openai/v1/chat/completions"
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {os.getenv("RUNPOD_API_KEY")}'
+    }
+
+    data = {
+        "model": "deepseek-ai/deepseek-r1-distill-qwen-1.5b",  # ✅ Now explicitly included
+        "messages": [
+            {
+    "role": "user",
+    "content": (
+        "You are required to produce a single, clear, accurate summary of the following military intelligence report. "
+        "You have only one chance. Focus on key facts, strategic implications, and ethical considerations. "
+        "Do not respond in a conversational or reflective style. Do not say things like 'I think' or 'Let's analyze.' "
+        "Return only the final summary, formatted for presentation in a secure military system.\n\n"
+        f"{text}"
+        
         )
-        return response['choices'][0]['message']['content']
+        }   
+
+        ],
+        "temperature": 0.3,
+        "max_tokens": 5000,
+        "presence_penalty": 0.1,
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        result = response.json()
+        logger.info(f"LLM summary response: {result}")   
+        # Extracting the summary content
+        content = result['choices'][0]['message']['content']
+        summary_start = content.find('</think>\n\n') + len('</think>\n\n')  # Find where the summary starts
+        summary = content[summary_start:].strip()  # Get the rest of the content after that point
+        # Log the extracted summary
+        logger.info(f"LLM summary: {summary}")
+        return summary
+    except requests.exceptions.RequestException as e:
+        logger.error(f"An error occurred: {e}")
+        return "Error: Could not generate summary using DeepSeek-R1-Distill-Qwen-1.5B."
+    except KeyError as e:
+        logger.error(f"Unexpected response format: {e}, response was: {response.text}")
+        return "Error: Unexpected response format from model."
+
+    
+def summarize_with_gpt4o(text):
+    """Summarize text using OpenAI's GPT-4o model via OpenAI SDK v1.x"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a military intelligence analyst tasked with summarizing reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations."
+                },
+                {
+                    "role": "user",
+                    "content": f"Summarize this report and return text in well formatted way. The summary will be displayed in a React web app. Here is report text:\n\n{text}"
+                }
+            ],
+            max_tokens=500,
+            temperature=0.3,
+        )
+        return response.choices[0].message.content
     except Exception as e:
-        print(f"GPT-4 summarization failed: {str(e)}")
-        return f"Error: Could not generate GPT-4 summary. {str(e)}"
+        print(f"GPT-4o summarization failed: {type(e).__name__}: {e}")
+        return f"Error: Could not generate GPT-4o summary. {str(e)}"
 
 def summarize_with_claude(text):
     """Summarize text using Anthropic's Claude"""
@@ -183,6 +261,31 @@ def summarize_with_t5(text):
     except Exception as e:
         print(f"T5 summarization failed: {str(e)}")
         return f"Error: Could not generate T5 summary. {str(e)}"
+    
+def summarize_with_google_pegasus(text: str) -> str:
+    """
+    Summarizes the input text using the google/pegasus-large model.
+
+    Args:
+        text (str): The text to be summarized.
+
+    Returns:
+        str: The summarized text.
+    """
+    # Load the tokenizer and model
+    tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large")
+    model = PegasusForConditionalGeneration.from_pretrained("google/pegasus-large")
+
+    # Tokenize the input text
+    inputs = tokenizer(text, truncation=True, padding="longest", return_tensors="pt")
+
+    # Generate the summary
+    summary_ids = model.generate(**inputs, max_length=5000, num_beams=5, early_stopping=True)
+
+    # Decode the generated summary
+    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+
+    return summary
 
 if __name__ == "__main__":
     # Test BART model loading

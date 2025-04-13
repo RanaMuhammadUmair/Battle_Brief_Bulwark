@@ -380,3 +380,150 @@
 2025-04-12 19:05:39,118 - main - INFO - Generating summary using bart model...
 2025-04-12 19:06:57,216 - main - INFO - Summary generated successfully
 2025-04-12 19:06:57,218 - main - INFO - Temporary file cleaned up
+2025-04-13 00:29:28,882 - main - INFO - Received summarization request for file: payment-confirmation-ccdrzuf4_ejp3tjqg.pdf using model: bart
+2025-04-13 00:29:28,882 - main - INFO - Handling uploaded file: payment-confirmation-ccdrzuf4_ejp3tjqg.pdf
+2025-04-13 00:29:28,882 - main - INFO - Extracting text from file...
+2025-04-13 00:29:28,914 - main - INFO - Extracted text length: 315 characters
+2025-04-13 00:29:28,914 - main - INFO - Generating summary using bart model...
+2025-04-13 00:30:16,029 - main - INFO - Summary generated successfully
+2025-04-13 00:30:16,029 - main - INFO - Temporary file cleaned up
+2025-04-13 01:03:22,130 - main - INFO - Received summarization request for file: payment-confirmation-ccdrzuf4_ejp3tjqg.pdf using model: google-pegasus
+2025-04-13 01:03:22,130 - main - INFO - Handling uploaded file: payment-confirmation-ccdrzuf4_ejp3tjqg.pdf
+2025-04-13 01:03:22,130 - main - INFO - Extracting text from file...
+2025-04-13 01:03:22,169 - main - INFO - Extracted text length: 315 characters
+2025-04-13 01:03:22,169 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 01:06:38,851 - main - INFO - Summary generated successfully
+2025-04-13 01:06:38,851 - main - INFO - Temporary file cleaned up
+2025-04-13 01:07:05,918 - main - INFO - Received summarization request for file: payment-confirmation-ccdrzuf4_ejp3tjqg.pdf using model: google-pegasus
+2025-04-13 01:07:05,918 - main - INFO - Handling uploaded file: payment-confirmation-ccdrzuf4_ejp3tjqg.pdf
+2025-04-13 01:07:05,920 - main - INFO - Extracting text from file...
+2025-04-13 01:07:05,960 - main - INFO - Extracted text length: 315 characters
+2025-04-13 01:07:05,960 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 01:07:14,571 - main - INFO - Summary generated successfully
+2025-04-13 01:07:14,571 - main - INFO - Temporary file cleaned up
+2025-04-13 01:07:22,389 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: google-pegasus
+2025-04-13 01:07:22,389 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 01:07:22,390 - main - INFO - Extracting text from file...
+2025-04-13 01:07:22,558 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 01:07:22,558 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 01:07:32,190 - main - INFO - Summary generated successfully
+2025-04-13 01:07:32,196 - main - INFO - Temporary file cleaned up
+2025-04-13 01:13:20,507 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: google-pegasus
+2025-04-13 01:13:20,507 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 01:13:20,507 - main - INFO - Extracting text from file...
+2025-04-13 01:13:20,732 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 01:13:20,732 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 01:16:49,644 - main - INFO - Summary generated successfully
+2025-04-13 01:16:49,644 - main - INFO - Temporary file cleaned up
+2025-04-13 01:17:21,719 - main - INFO - Received summarization request for file: NATO_Intelligence_Report.pdf using model: google-pegasus
+2025-04-13 01:17:21,719 - main - INFO - Handling uploaded file: NATO_Intelligence_Report.pdf
+2025-04-13 01:17:21,720 - main - INFO - Extracting text from file...
+2025-04-13 01:17:21,751 - main - INFO - Extracted text length: 1839 characters
+2025-04-13 01:17:21,751 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 01:17:35,661 - main - INFO - Summary generated successfully
+2025-04-13 01:17:35,661 - main - INFO - Temporary file cleaned up
+2025-04-13 01:17:50,061 - main - INFO - Received summarization request for file: Personalhåndbok - versjon Jan2025.pdf using model: google-pegasus
+2025-04-13 01:17:50,061 - main - INFO - Handling uploaded file: Personalhåndbok - versjon Jan2025.pdf
+2025-04-13 01:17:50,061 - main - INFO - Extracting text from file...
+2025-04-13 01:17:51,116 - main - INFO - Extracted text length: 73727 characters
+2025-04-13 01:17:51,116 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 01:18:07,797 - main - INFO - Summary generated successfully
+2025-04-13 01:18:07,797 - main - INFO - Temporary file cleaned up
+2025-04-13 01:19:02,653 - main - INFO - Received summarization request for file: Personalhåndbok - versjon Jan2025.pdf using model: google-pegasus
+2025-04-13 01:19:02,653 - main - INFO - Handling uploaded file: Personalhåndbok - versjon Jan2025.pdf
+2025-04-13 01:19:02,655 - main - INFO - Extracting text from file...
+2025-04-13 01:19:03,304 - main - INFO - Extracted text length: 73727 characters
+2025-04-13 01:19:03,304 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 01:19:34,315 - main - INFO - Summary generated successfully
+2025-04-13 01:19:34,315 - main - INFO - Temporary file cleaned up
+2025-04-13 01:19:53,473 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: google-pegasus
+2025-04-13 01:19:53,473 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 01:19:53,473 - main - INFO - Extracting text from file...
+2025-04-13 01:19:53,606 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 01:19:53,606 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 01:20:21,644 - main - INFO - Summary generated successfully
+2025-04-13 01:20:21,644 - main - INFO - Temporary file cleaned up
+2025-04-13 01:36:23,682 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: gpt4
+2025-04-13 01:36:23,682 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 01:36:23,688 - main - INFO - Extracting text from file...
+2025-04-13 01:36:23,920 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 01:36:23,920 - main - INFO - Generating summary using gpt4 model...
+2025-04-13 01:36:29,082 - main - INFO - Summary generated successfully
+2025-04-13 01:36:29,082 - main - INFO - Temporary file cleaned up
+2025-04-13 01:48:59,351 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: gpt4
+2025-04-13 01:48:59,351 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 01:48:59,353 - main - INFO - Extracting text from file...
+2025-04-13 01:48:59,598 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 01:48:59,598 - main - INFO - Generating summary using gpt4 model...
+2025-04-13 01:49:07,629 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-13 01:49:07,640 - main - INFO - Summary generated successfully
+2025-04-13 01:49:07,640 - main - INFO - Temporary file cleaned up
+2025-04-13 02:30:13,426 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: gpt4
+2025-04-13 02:30:13,426 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 02:30:13,426 - main - INFO - Extracting text from file...
+2025-04-13 02:30:13,704 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 02:30:13,704 - main - INFO - Generating summary using gpt4 model...
+2025-04-13 02:30:26,265 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-13 02:30:26,267 - main - INFO - Summary generated successfully
+2025-04-13 02:30:26,267 - main - INFO - Temporary file cleaned up
+2025-04-13 02:35:15,019 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: gpt4
+2025-04-13 02:35:15,019 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 02:35:15,019 - main - INFO - Extracting text from file...
+2025-04-13 02:35:15,249 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 02:35:15,251 - main - INFO - Generating summary using gpt4 model...
+2025-04-13 02:35:27,369 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-13 02:35:27,374 - main - INFO - Summary generated successfully
+2025-04-13 02:35:27,374 - main - INFO - Temporary file cleaned up
+2025-04-13 02:37:55,910 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: gpt4
+2025-04-13 02:37:55,910 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 02:37:55,915 - main - INFO - Extracting text from file...
+2025-04-13 02:37:56,032 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 02:37:56,032 - main - INFO - Generating summary using gpt4 model...
+2025-04-13 02:38:02,540 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-13 02:38:02,552 - main - INFO - Summary generated successfully
+2025-04-13 02:38:02,557 - main - INFO - Temporary file cleaned up
+2025-04-13 02:38:57,581 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: gpt4
+2025-04-13 02:38:57,581 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 02:38:57,586 - main - INFO - Extracting text from file...
+2025-04-13 02:38:57,702 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 02:38:57,702 - main - INFO - Generating summary using gpt4 model...
+2025-04-13 02:39:03,926 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-13 02:39:03,932 - main - INFO - Summary generated successfully
+2025-04-13 02:39:03,932 - main - INFO - Temporary file cleaned up
+2025-04-13 02:43:54,567 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: gpt4
+2025-04-13 02:43:54,567 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 02:43:54,569 - main - INFO - Extracting text from file...
+2025-04-13 02:43:54,785 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 02:43:54,785 - main - INFO - Generating summary using gpt4 model...
+2025-04-13 02:44:07,726 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-13 02:44:07,742 - main - INFO - Summary generated successfully
+2025-04-13 02:44:07,743 - main - INFO - Temporary file cleaned up
+2025-04-13 02:44:27,305 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: gpt4
+2025-04-13 02:44:27,311 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 02:44:27,311 - main - INFO - Extracting text from file...
+2025-04-13 02:44:27,427 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 02:44:27,427 - main - INFO - Generating summary using gpt4 model...
+2025-04-13 02:44:32,778 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-13 02:44:32,786 - main - INFO - Summary generated successfully
+2025-04-13 02:44:32,786 - main - INFO - Temporary file cleaned up
+2025-04-13 03:08:33,476 - main - INFO - Received summarization request for file: Group10_Report-2.pdf using model: google-pegasus
+2025-04-13 03:08:33,476 - main - INFO - Handling uploaded file: Group10_Report-2.pdf
+2025-04-13 03:08:33,478 - main - INFO - Extracting text from file...
+2025-04-13 03:08:33,612 - main - INFO - Extracted text length: 22848 characters
+2025-04-13 03:08:33,612 - main - INFO - Generating summary using google-pegasus model...
+2025-04-13 03:09:14,200 - main - INFO - Summary generated successfully
+2025-04-13 03:09:14,200 - main - INFO - Temporary file cleaned up
+2025-04-13 05:22:51,824 - main - INFO - Received summarization request for file: NATO_Intelligence_Report.pdf using model: bart
+2025-04-13 05:22:51,824 - main - INFO - Handling uploaded file: NATO_Intelligence_Report.pdf
+2025-04-13 05:22:51,830 - main - INFO - Extracting text from file...
+2025-04-13 05:22:51,970 - main - INFO - Extracted text length: 1839 characters
+2025-04-13 05:22:51,970 - main - INFO - Generating summary using bart model...
+2025-04-13 05:23:13,423 - main - INFO - Summary generated successfully
+2025-04-13 05:23:13,426 - main - INFO - Temporary file cleaned up
+2025-04-13 05:30:24,800 - main - INFO - Received summarization request for file: payment-confirmation-ccdrzuf4_ejp3tjqg.pdf using model: bart
+2025-04-13 05:30:24,800 - main - INFO - Handling uploaded file: payment-confirmation-ccdrzuf4_ejp3tjqg.pdf
+2025-04-13 05:30:24,800 - main - INFO - Extracting text from file...
+2025-04-13 05:30:24,837 - main - INFO - Extracted text length: 315 characters
+2025-04-13 05:30:24,837 - main - INFO - Generating summary using bart model...
+2025-04-13 05:31:04,445 - main - INFO - Summary generated successfully
+2025-04-13 05:31:04,445 - main - INFO - Temporary file cleaned up

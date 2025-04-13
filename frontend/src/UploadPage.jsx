@@ -68,7 +68,8 @@ const UploadPage = () => {
           <MenuItem value="bart">BART</MenuItem>
           <MenuItem value="claude">CLAUDE</MenuItem>
           <MenuItem value="t5">T5</MenuItem>
-      
+          <MenuItem value="google-pegasus">Google Pegasus</MenuItem>
+          <MenuItem value="deepseek-r1">DeepSeek-R1-runpod</MenuItem>
         </Select>
       </FormControl>
       <Button
