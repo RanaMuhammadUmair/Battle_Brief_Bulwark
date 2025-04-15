@@ -7,6 +7,7 @@ from utils import extract_text_from_file
 from summarization import summarize_text
 from db import Database
 from typing import List
+from tika import parser
 
 # Configure logging
 logging.basicConfig(
@@ -60,7 +61,8 @@ async def summarize(files: List[UploadFile] = File(...), model: str = Form(...),
         temp_path = handle_uploaded_file(file)
         try:
             logger.info(f"Extracting text from file {file.filename}...")
-            plain_text = extract_text_from_file(temp_path, file.filename)
+            #plain_text = extract_text_from_file(temp_path, file.filename)|
+            plain_text = parser.from_file(temp_path).get('content').strip()
             print(plain_text)
             logger.info(f"Extracted text length: {len(plain_text)} characters for file: {file.filename}")
 
