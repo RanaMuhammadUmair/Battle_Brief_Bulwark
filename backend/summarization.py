@@ -88,7 +88,7 @@ def summarize_text(text, model_name, max_attempts=3):
             text = text + f"\n\nPlease ensure the summary avoids: {feedback}"
     
     # If we've exhausted attempts, return a sanitized version
-    return "*The document contains sensitive content that required human review. Please consult with your supervisor before using this summary.* \n Summary: {summary}"
+    return "*The document contains sensitive content that required human review. Please consult with your supervisor before using this summary.* \n Summary: " + summary
 
 
 
@@ -159,7 +159,7 @@ def summarize_with_gpt4o(text):
                     "content": f"Summarize this report and return text in well formatted way. Here is report text:\n\n{text}"
                 }
             ],
-            max_tokens=32700,
+            max_tokens=1000,
             temperature=0.3,
         )
         return response.choices[0].message.content
@@ -238,29 +238,7 @@ def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_to
     
 
 def summarize_with_t5(text):
-    """Summarize text using T5-small model"""
-    try:
-        model, tokenizer = models["t5"]
-        
-        # Truncate input if it's too long
-        max_length = 512
-        inputs = tokenizer("summarize: " + text, return_tensors="pt", max_length=max_length, truncation=True)
-        
-        # Generate summary
-        summary_ids = model.generate(
-            inputs.input_ids, 
-            max_length=150, 
-            min_length=40, 
-            length_penalty=2.0, 
-            num_beams=4, 
-            early_stopping=True
-        )
-        
-        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-        return summary
-    except Exception as e:
-        print(f"T5 summarization failed: {str(e)}")
-        return f"Error: Could not generate T5 summary. {str(e)}"
+    return text
     
 def summarize_with_google_pegasus(text: str) -> str:
     """

@@ -6,6 +6,7 @@ import tempfile
 from utils import extract_text_from_file
 from summarization import summarize_text
 from db import Database
+from typing import List
 
 # Configure logging
 logging.basicConfig(
@@ -43,45 +44,49 @@ def handle_uploaded_file(file: UploadFile) -> str:
         return temp_file.name
 
 @app.post("/summarize")
-async def summarize(file: UploadFile = File(...), model: str = Form(...), user_id: str = Form(None)):
+async def summarize(files: List[UploadFile] = File(...), model: str = Form(...), user_id: str = Form(None)):
     """
-    Upload a file and summarize its content.
+    Upload one or more files and summarize their content.
     """
-    logger.info(f"Received summarization request for file: {file.filename} using model: {model}")
-    
-    if not any(file.filename.endswith(ext) for ext in SUPPORTED_FILE_TYPES):
-        logger.error(f"Unsupported file type: {file.filename}")
-        summary = "file not supported"
-        return {"error": f"Unsupported file type: {file.filename}"}
+    summaries = {}
+    for file in files:
+        logger.info(f"Received summarization request for file: {file.filename} using model: {model}")
+        
+        if not any(file.filename.endswith(ext) for ext in SUPPORTED_FILE_TYPES):
+            logger.error(f"Unsupported file type: {file.filename}")
+            summaries[file.filename] = "file not supported"
+            continue
 
-    temp_path = handle_uploaded_file(file)
-    try:
-        logger.info("Extracting text from file...")
-        plain_text = extract_text_from_file(temp_path, file.filename)
-        print(plain_text)
-        logger.info(f"Extracted text length: {len(plain_text)} characters")
+        temp_path = handle_uploaded_file(file)
+        try:
+            logger.info(f"Extracting text from file {file.filename}...")
+            plain_text = extract_text_from_file(temp_path, file.filename)
+            print(plain_text)
+            logger.info(f"Extracted text length: {len(plain_text)} characters for file: {file.filename}")
 
-        logger.info(f"Generating summary using {model} model...")
-        summary = summarize_text(plain_text, model)
-        logger.info("Summary generated successfully")
+            logger.info(f"Generating summary using {model} model for file: {file.filename}...")
+            summary = summarize_text(plain_text, model)
+            summaries[file.filename] = summary
+            logger.info(f"Summary generated successfully for file: {file.filename}")
 
-        # Save to database if user_id is provided
-        if user_id:
-            metadata = {
-                "filename": file.filename,
-                "model": model,
-            }
-            db.save_summary(user_id, plain_text, summary, metadata)
-            logger.info(f"Summary saved to database for user: {user_id}")
+            # Save to database if user_id is provided
+            if user_id:
+                metadata = {
+                    "filename": file.filename,
+                    "model": model,
+                }
+                db.save_summary(user_id, plain_text, summary, metadata)
+                logger.info(f"Summary saved to database for user: {user_id} and file: {file.filename}")
 
-        return {"summary": summary}
-    except Exception as e:
-        logger.error(f"Error processing file {file.filename}: {str(e)}")
-        return {"error": f"Error processing file {file.filename}: {str(e)}"}
-    finally:
-        # Clean up temporary file
-        os.unlink(temp_path)
-        logger.info("Temporary file cleaned up")
+        except Exception as e:
+            logger.error(f"Error processing file {file.filename}: {str(e)}")
+            summaries[file.filename] = f"Error processing file: {str(e)}"
+        finally:
+            # Clean up temporary file
+            os.unlink(temp_path)
+            logger.info(f"Temporary file cleaned up for file: {file.filename}")
+
+    return {"summaries": summaries}
 
 if __name__ == "__main__":
     import uvicorn
