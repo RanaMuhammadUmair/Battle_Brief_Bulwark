@@ -13,11 +13,11 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load API keys from environment variables
-# Load .env variables
+# Load API keys from environment variables (.env )
 load_dotenv()
+# OpenAI API key
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-# Set your RunPod API key
+#RunPod API key
 runpod.api_key = os.getenv("RUNPOD_API_KEY")
 endpoint_id = os.getenv("YOUR_ENDPOINT_ID")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_API_KEY")
@@ -148,7 +148,7 @@ def summarize_with_gpt4o(text):
     """Summarize text using OpenAI's GPT-4o model via OpenAI SDK v1.x"""
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4.1-nano",
             messages=[
                 {
                     "role": "system",
@@ -156,16 +156,16 @@ def summarize_with_gpt4o(text):
                 },
                 {
                     "role": "user",
-                    "content": f"Summarize this report and return text in well formatted way. The summary will be displayed in a React web app. Here is report text:\n\n{text}"
+                    "content": f"Summarize this report and return text in well formatted way. Here is report text:\n\n{text}"
                 }
             ],
-            max_tokens=500,
+            max_tokens=32700,
             temperature=0.3,
         )
         return response.choices[0].message.content
     except Exception as e:
-        print(f"GPT-4o summarization failed: {type(e).__name__}: {e}")
-        return f"Error: Could not generate GPT-4o summary. {str(e)}"
+        print(f"GPT-4.1-nano summarization failed: {type(e).__name__}: {e}")
+        return f"Error: Could not generate GPT-4.1-nano summary. {str(e)}"
 
 def summarize_with_claude(text):
     """Summarize text using Anthropic's Claude"""
