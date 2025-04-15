@@ -9,7 +9,11 @@ import {
   InputLabel,
   CircularProgress,
   Paper,
+  Chip,
 } from "@mui/material";
+
+// List of supported file types (match backend settings)
+const supportedFileTypes = [".txt", ".pdf", ".docx"];
 
 const UploadPage = () => {
   const [files, setFiles] = useState([]);
@@ -18,7 +22,17 @@ const UploadPage = () => {
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
+    const selectedFiles = Array.from(e.target.files);
+    const validFiles = selectedFiles.filter((file) => {
+      const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+      if (supportedFileTypes.includes(extension)) {
+        return true;
+      } else {
+        alert(`File "${file.name}" is not supported. Allowed types: ${supportedFileTypes.join(", ")}`);
+        return false;
+      }
+    });
+    setFiles(validFiles);
   };
 
   const handleSummarize = async () => {
@@ -107,23 +121,31 @@ const UploadPage = () => {
         {loading ? <CircularProgress size={24} color="inherit" /> : "Summarize"}
       </Button>
       {Object.keys(summaries).length > 0 && (
-        <Box sx={{ mt: 4 }}>
+        <Box sx={{ mt: 2 }}>
           {Object.entries(summaries).map(([filename, summary]) => (
-            <Box
-              key={filename}
-              sx={{
-                p: 2,
-                backgroundColor: "#e8eaf6",
-                borderRadius: 1,
-                mb: 2,
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                Summary of {filename}
-              </Typography>
-              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                {summary}
-              </Typography>
+            <Box key={filename} sx={{ mb: 2 }}>
+              <Chip
+                label={`Summary of "${filename}"`}
+                sx={{
+                  backgroundColor: "#ffb74d",
+                  color: "#1a237e",
+                  fontSize: "1.2rem",
+                  fontWeight: "bold",
+                  padding: "20px",
+                  mb: 2,
+                }}
+              />
+              <Box
+                sx={{
+                  p: 2,
+                  backgroundColor: "#e8eaf6",
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                  {summary}
+                </Typography>
+              </Box>
             </Box>
           ))}
         </Box>
