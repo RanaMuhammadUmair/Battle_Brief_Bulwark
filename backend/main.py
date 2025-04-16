@@ -8,6 +8,8 @@ from summarization import summarize_text
 from db import Database
 from typing import List
 from tika import parser
+from auth import router as auth_router
+from users_db import initialize_db
 
 # Configure logging
 logging.basicConfig(
@@ -19,6 +21,9 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Initialize the users DB (create table if not exists)
+initialize_db()
 
 app = FastAPI()
 
@@ -61,9 +66,7 @@ async def summarize(files: List[UploadFile] = File(...), model: str = Form(...),
         temp_path = handle_uploaded_file(file)
         try:
             logger.info(f"Extracting text from file {file.filename}...")
-            #plain_text = extract_text_from_file(temp_path, file.filename)|
             plain_text = parser.from_file(temp_path).get('content').strip()
-            print(plain_text)
             logger.info(f"Extracted text length: {len(plain_text)} characters for file: {file.filename}")
 
             logger.info(f"Generating summary using {model} model for file: {file.filename}...")
@@ -71,24 +74,33 @@ async def summarize(files: List[UploadFile] = File(...), model: str = Form(...),
             summaries[file.filename] = summary
             logger.info(f"Summary generated successfully for file: {file.filename}")
 
-            # Save to database if user_id is provided
-            if user_id:
-                metadata = {
-                    "filename": file.filename,
-                    "model": model,
-                }
-                db.save_summary(user_id, plain_text, summary, metadata)
-                logger.info(f"Summary saved to database for user: {user_id} and file: {file.filename}")
+            
+            metadata = { "filename": file.filename, "model": model }
+            db.save_summary(user_id, plain_text, summary, metadata)
+            logger.info(f"Summary saved to database for user: {user_id} and file: {file.filename}")
 
         except Exception as e:
             logger.error(f"Error processing file {file.filename}: {str(e)}")
             summaries[file.filename] = f"Error processing file: {str(e)}"
         finally:
-            # Clean up temporary file
             os.unlink(temp_path)
-            logger.info(f"Temporary file cleaned up for file: {file.filename}")
+            
+    # Return the live summaries so the frontend can display them immediately.
+    return summaries
 
-    return {"summaries": summaries}
+@app.get("/summaries")
+async def get_summaries(user: str):
+    """
+    Retrieve stored summaries for a given user.
+    """
+    try:
+        user_summaries = db.get_summaries_for_user(user)
+        return {"summaries": user_summaries}
+    except Exception as e:
+        logger.error(f"Error retrieving summaries for user {user}: {str(e)}")
+        return {"summaries": []}
+
+app.include_router(auth_router)
 
 if __name__ == "__main__":
     import uvicorn
