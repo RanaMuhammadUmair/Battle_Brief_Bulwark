@@ -183,59 +183,59 @@ def summarize_with_claude(text):
         print(f"Claude summarization failed: {str(e)}")
         return f"Error: Could not generate Claude summary. {str(e)}"
 
-def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, chunk_overlap=50):
+def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, chunk_overlap=50,
+                        chunk_max_length=500, chunk_min_length=75, final_max_length=2500, final_min_length=500):
     """
     Summarize long text using BART with token-based chunking and hierarchical summarization.
+    Allows longer summaries by increasing max_length during generation.
     """
     # Initialize tokenizer and model
     tokenizer = BartTokenizer.from_pretrained(model_name)
     model = BartForConditionalGeneration.from_pretrained(model_name)
-
+    
     # Tokenize the input text
     inputs = tokenizer(text, return_tensors="pt", truncation=False)
     input_ids = inputs["input_ids"][0]
-
+    
     # Split into overlapping chunks
     chunks = []
     start = 0
     while start < len(input_ids):
         end = min(start + max_input_tokens, len(input_ids))
-        chunk = input_ids[start:end]
-        chunks.append(chunk)
+        chunks.append(input_ids[start:end])
         if end == len(input_ids):
             break
         start += max_input_tokens - chunk_overlap  # Move start point with overlap
-
+    
     # Generate summaries for each chunk
     summaries = []
     for chunk in chunks:
         input_chunk = chunk.unsqueeze(0)  # Add batch dimension
         summary_ids = model.generate(
             input_chunk,
-            max_length=200,
-            min_length=50,
+            max_length=chunk_max_length,
+            min_length=chunk_min_length,
             length_penalty=2.0,
             num_beams=4,
             early_stopping=True
         )
         summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
         summaries.append(summary)
-
+    
     # Combine summaries and perform hierarchical summarization
     combined_summary = " ".join(summaries)
     inputs = tokenizer(combined_summary, return_tensors="pt", truncation=True, max_length=max_input_tokens)
     summary_ids = model.generate(
         inputs["input_ids"],
-        max_length=200,
-        min_length=50,
+        max_length=final_max_length,
+        min_length=final_min_length,
         length_penalty=2.0,
         num_beams=4,
         early_stopping=True
     )
     final_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-
-    return final_summary
     
+    return final_summary
 
 def summarize_with_t5(text):
     return text

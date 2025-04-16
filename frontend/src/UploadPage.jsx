@@ -10,9 +10,12 @@ import {
   CircularProgress,
   Paper,
   Chip,
+  Card,
+  CardContent,
+  Alert,
 } from "@mui/material";
 
-// List of supported file types (match backend settings)
+// Supported file types for client-side filtering
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 
 const UploadPage = () => {
@@ -20,7 +23,9 @@ const UploadPage = () => {
   const [model, setModel] = useState("gpt4");
   const [summaries, setSummaries] = useState({});
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
+  // File selection handler with file type validation
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const validFiles = selectedFiles.filter((file) => {
@@ -28,19 +33,23 @@ const UploadPage = () => {
       if (supportedFileTypes.includes(extension)) {
         return true;
       } else {
-        alert(`File "${file.name}" is not supported. Allowed types: ${supportedFileTypes.join(", ")}`);
+        alert(
+          `File "${file.name}" is not supported. Allowed types: ${supportedFileTypes.join(
+            ", "
+          )}`
+        );
         return false;
       }
     });
     setFiles(validFiles);
   };
 
+  // Summarize handler with error management and clean UI feedback
   const handleSummarize = async () => {
     if (files.length === 0) {
       alert("Please select at least one file!");
       return;
     }
-
     setLoading(true);
     const formData = new FormData();
     files.forEach((file) => {
@@ -73,11 +82,7 @@ const UploadPage = () => {
         Upload and Summarize
       </Typography>
       <Box sx={{ mb: 3 }}>
-        <Button
-          variant="contained"
-          component="label"
-          sx={{ backgroundColor: "#1a237e" }}
-        >
+        <Button variant="contained" component="label" sx={{ backgroundColor: "#1a237e" }}>
           Select Files
           <input type="file" hidden multiple onChange={handleFileChange} />
         </Button>
@@ -95,11 +100,13 @@ const UploadPage = () => {
           )}
         </Box>
       </Box>
+
       <FormControl fullWidth sx={{ mb: 3 }}>
         <InputLabel id="model-select-label">Model</InputLabel>
         <Select
           labelId="model-select-label"
           value={model}
+          label="Model"
           onChange={(e) => setModel(e.target.value)}
           sx={{ mt: 2 }}
         >
@@ -111,6 +118,7 @@ const UploadPage = () => {
           <MenuItem value="deepseek-r1">DeepSeek-R1-runpod</MenuItem>
         </Select>
       </FormControl>
+
       <Button
         variant="contained"
         color="primary"
@@ -120,32 +128,31 @@ const UploadPage = () => {
       >
         {loading ? <CircularProgress size={24} color="inherit" /> : "Summarize"}
       </Button>
+
+      {/* Display Summaries */}
       {Object.keys(summaries).length > 0 && (
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 4 }}>
           {Object.entries(summaries).map(([filename, summary]) => (
-            <Box key={filename} sx={{ mb: 2 }}>
+            <Box key={filename} sx={{ mb: 3 }}>
               <Chip
                 label={`Summary of "${filename}"`}
                 sx={{
                   backgroundColor: "#ffb74d",
                   color: "#1a237e",
-                  fontSize: "1.2rem",
+                  fontSize: "1.1rem",
                   fontWeight: "bold",
-                  padding: "20px",
-                  mb: 2,
+                  px: 1.5,
+                  py: 0.5,
+                  mb: 1,
                 }}
               />
-              <Box
-                sx={{
-                  p: 2,
-                  backgroundColor: "#e8eaf6",
-                  borderRadius: 1,
-                }}
-              >
-                <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                  {summary}
-                </Typography>
-              </Box>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                    {summary}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Box>
           ))}
         </Box>
