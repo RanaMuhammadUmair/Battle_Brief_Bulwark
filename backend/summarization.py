@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM, BartTokenizer, BartForConditionalGeneration, PegasusTokenizer, PegasusForConditionalGeneration
 import anthropic
-from ethics import ethical_check
 import torch
 import requests
 import runpod
@@ -38,59 +37,26 @@ def load_models():
         t5_model = AutoModelForSeq2SeqLM.from_pretrained("t5-small", low_cpu_mem_usage=True)
         models["t5"] = (t5_model, t5_tokenizer)
 
-def summarize_text(text, model_name, max_attempts=3):
-    """
-    Summarize text using the specified model.
-    Apply ethical checks and retry if needed.
-    
-    Args:
-        text: Input text to summarize
-        model_name: Name of the model to use
-        max_attempts: Max number of attempts for ethical filtering
-    
-    Returns:
-        Summarized text that passes ethical checks
-    """
+def summarize_text(text, model_name):
     # Make sure models are loaded
     load_models()
-    
-    # Initialize attempt counter
-    attempts = 0
-    summary = None
-    
-    while attempts < max_attempts:
-        attempts += 1
-        
-        # Generate summary using the selected model
-        if model_name.lower() == "gpt4":
-            summary = summarize_with_gpt4o(text)
-        elif model_name.lower() == "claude":
-            summary = summarize_with_claude(text)
-        elif model_name.lower() == "bart":
-            summary = summarize_with_bart(text)
-        elif model_name.lower() == "t5":
-            summary = summarize_with_t5(text)
-        elif model_name.lower() == "google-pegasus":
-            summary = summarize_with_google_pegasus(text)
-        elif model_name.lower() == "deepseek-r1":
-            summary = summarize_with_DeepSeek_R1_runpod(text)
-        else:
-            return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, or T5."
-        
-        # Check if summary is ethical
-        is_ethical, feedback = ethical_check(summary, model_name)
-        
-        if is_ethical:
-            return summary
-        
-        # If not ethical and we have more attempts, try again with feedback
-        if attempts < max_attempts:
-            text = text + f"\n\nPlease ensure the summary avoids: {feedback}"
-    
-    # If we've exhausted attempts, return a sanitized version
-    return "*The document contains sensitive content that required human review. Please consult with your supervisor before using this summary.* \n Summary: " + summary
-
-
+    summary = None  
+    # Generate summary using the selected model
+    if model_name.lower() == "gpt4":
+        summary = summarize_with_gpt4o(text)
+    elif model_name.lower() == "claude":
+        summary = summarize_with_claude(text)
+    elif model_name.lower() == "bart":
+        summary = summarize_with_bart(text)
+    elif model_name.lower() == "t5":
+        summary = summarize_with_t5(text)
+    elif model_name.lower() == "google-pegasus":
+        summary = summarize_with_google_pegasus(text)
+    elif model_name.lower() == "deepseek-r1":
+        summary = summarize_with_DeepSeek_R1_runpod(text)
+    else:
+        return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, T5, or Google Pegasus."
+    return summary
 
 def summarize_with_DeepSeek_R1_runpod(text):
     logger.info("Summarizing with DeepSeek-R1-Distill-Qwen-1.5B model on RunPod")
@@ -184,7 +150,7 @@ def summarize_with_claude(text):
         return f"Error: Could not generate Claude summary. {str(e)}"
 
 def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, chunk_overlap=50,
-                        chunk_max_length=500, chunk_min_length=75, final_max_length=2500, final_min_length=500):
+                        chunk_max_length=500, chunk_min_length=50, final_max_length=2500, final_min_length=100):
     """
     Summarize long text using BART with token-based chunking and hierarchical summarization.
     Allows longer summaries by increasing max_length during generation.
