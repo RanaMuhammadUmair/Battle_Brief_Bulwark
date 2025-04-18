@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import tempfile
 from utils import extract_text_from_file
-from summarization import summarize_text
+from summarization_module import summarize_text
 from db import Database
 from typing import List
 from tika import parser

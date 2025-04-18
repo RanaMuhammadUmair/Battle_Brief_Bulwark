@@ -43,7 +43,7 @@ def summarize_text(text, model_name):
     summary = None  
     # Generate summary using the selected model
     if model_name.lower() == "gpt4":
-        summary = summarize_with_gpt4o(text)
+        summary = summarize_with_gpt_4point1(text)
     elif model_name.lower() == "claude":
         summary = summarize_with_claude(text)
     elif model_name.lower() == "bart":
@@ -109,12 +109,19 @@ def summarize_with_DeepSeek_R1_runpod(text):
         logger.error(f"Unexpected response format: {e}, response was: {response.text}")
         return "Error: Unexpected response format from model."
 
-    
-def summarize_with_gpt4o(text):
-    """Summarize text using OpenAI's GPT-4o model via OpenAI SDK v1.x"""
+
+
+def summarize_with_gpt_4point1(text):
+    """
+    Args:
+        text (str): The text to be summarized.
+    Returns:
+        str: The summarized text.
+    """
     try:
+        # Sending a prompt to the OpenAI API with system and user role messages:
         response = client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model="gpt-4.1",
             messages=[
                 {
                     "role": "system",
@@ -125,13 +132,15 @@ def summarize_with_gpt4o(text):
                     "content": f"Summarize this report and return text in well formatted way. Here is report text:\n\n{text}"
                 }
             ],
-            max_tokens=1000,
-            temperature=0.3,
+            max_tokens=5000, # Limiting the output length / can be changed
+            temperature=0.3, # Using a low temperature for focused outputs.
         )
+        # Extracting and returning summary from the response
         return response.choices[0].message.content
     except Exception as e:
-        print(f"GPT-4.1-nano summarization failed: {type(e).__name__}: {e}")
-        return f"Error: Could not generate GPT-4.1-nano summary. {str(e)}"
+        # Handling any exceptions during the API call
+        print(f"GPT-4.1 summarization failed: {type(e).__name__}: {e}")
+        return f"Error: Could not generate GPT-4.1 summary. {str(e)}"
 
 def summarize_with_claude(text):
     """Summarize text using Anthropic's Claude"""
