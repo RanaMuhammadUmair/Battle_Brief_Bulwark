@@ -408,6 +408,26 @@ const UploadPage = () => {
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
         {renderHistory()}
       </Drawer>
+
+      {/* Footer Disclaimer */}
+      <Box
+        component="footer"
+        sx={{
+          mt: "auto",
+          p: 2,
+          backgroundColor: "#f5f5f5",
+          borderTop: "1px solid #ccc",
+          textAlign: "center",
+          fontSize: "0.8rem",
+          color: "#757575"
+        }}
+      >
+        <Typography variant="body2">
+          <strong>Disclaimer: </strong>
+          This website is a Master’s thesis project of UIS student. Please do not upload or include any confidential or current intelligence reports. For testing purposes, only use historical documents that no longer carry real‐world value or anonymized/dummy data.
+          The author assumes no responsibility for any misuse of sensitive information.
+        </Typography>
+      </Box>
     </Box>
   );
 };
