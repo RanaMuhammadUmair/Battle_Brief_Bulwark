@@ -306,7 +306,6 @@ const UploadPage = () => {
           {/* Live Generated Summaries Area */}
           <Box sx={{ mt: 4 }}>
             {selectedSummary ? (
-              // If a stored summary is selected, show its full content as the live summary.
               <Box sx={{ mb: 3 }}>
                 <Chip
                   label={`Summary of "${selectedSummary.filename}"`}
@@ -340,11 +339,25 @@ const UploadPage = () => {
                           py: 0.5,
                           ml: 1,
                           mb: 1,
-                          // Strobing animation removed.
                         }}
                       />
                     );
                   })()}
+                {selectedSummary.created_at && (
+                  <Chip
+                    label={`Time: ${new Date(selectedSummary.created_at).toLocaleString()}`}
+                    sx={{
+                      backgroundColor: "#ffb74d",
+                      color: "#1a237e",
+                      fontSize: "1.1rem",
+                      fontWeight: "bold",
+                      px: 1.5,
+                      py: 0.5,
+                      ml: 1,
+                      mb: 1,
+                    }}
+                  />
+                )}
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
