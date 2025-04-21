@@ -7,6 +7,7 @@ import torch
 import requests
 import runpod
 import logging
+import google.generativeai as genai
 
 # Configure logger
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 # Load API keys from environment variables (.env )
 load_dotenv()
 # OpenAI API key
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 #RunPod API key
 runpod.api_key = os.getenv("RUNPOD_API_KEY")
 endpoint_id = os.getenv("YOUR_ENDPOINT_ID")
@@ -39,7 +40,7 @@ def load_models():
 
 def summarize_text(text, model_name):
     # Make sure models are loaded
-    load_models()
+    #load_models()
     summary = None  
     # Generate summary using the selected model
     if model_name.lower() == "gpt4":
@@ -50,12 +51,12 @@ def summarize_text(text, model_name):
         summary = summarize_with_bart(text)
     elif model_name.lower() == "t5":
         summary = summarize_with_t5(text)
-    elif model_name.lower() == "google-pegasus":
-        summary = summarize_with_google_pegasus(text)
+    elif model_name.lower() == "gemini2point5_pro":
+        summary = summarize_with_gemini2point5_pro(text)
     elif model_name.lower() == "deepseek-r1":
         summary = summarize_with_DeepSeek_R1_runpod(text)
     else:
-        return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, T5, or Google Pegasus."
+        return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, T5, or Gemini 2.5 Pro."
     return summary
 
 def summarize_with_DeepSeek_R1_runpod(text):
@@ -120,7 +121,7 @@ def summarize_with_gpt_4point1(text):
     """
     try:
         # Sending a prompt to the OpenAI API with system and user role messages:
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model="gpt-4.1",
             messages=[
                 {
@@ -215,30 +216,76 @@ def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_to
 def summarize_with_t5(text):
     return text
     
-def summarize_with_google_pegasus(text: str) -> str:
+def summarize_with_gemini2point5_pro(text):
     """
-    Summarizes the input text using the google/pegasus-large model.
+    Summarize text using Google's Gemini Flash Preview API via the google-generativeai library.
 
     Args:
-        text (str): The text to be summarized.
+        text (str): The military report text to be summarized.
 
     Returns:
-        str: The summarized text.
+        str: The summarized text or an error message if the API call fails.
     """
-    # Load the tokenizer and model
-    tokenizer = PegasusTokenizer.from_pretrained("google/pegasus-large")
-    model = PegasusForConditionalGeneration.from_pretrained("google/pegasus-large")
+    # Load the API key from environment variables
+    api_key = os.getenv("GOOGLE_GENAI_API_KEY")
+    if not api_key:
+        logger.error("Gemini API key is not set in environment variables.")
+        return "Error: Gemini API key not set."
 
-    # Tokenize the input text
-    inputs = tokenizer(text, truncation=True, padding="longest", return_tensors="pt")
+    # Initialize model_name_to_use before the try block
+    model_name_to_use = "gemini-2.5-flash-preview-04-17" # <-- Define intended model name here
 
-    # Generate the summary
-    summary_ids = model.generate(**inputs, max_length=5000, num_beams=5, early_stopping=True)
+    try:
+        # Configure the genai library using the imported alias
+        genai.configure(api_key=api_key)
 
-    # Decode the generated summary
-    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+        # --- Initialize the GenerativeModel ---
+        logger.info(f"Attempting to use Gemini Preview model: {model_name_to_use}")
+        model = genai.GenerativeModel(model_name_to_use)
+        # --- End Initialization ---
 
-    return summary
+        prompt = (
+            "You are a military intelligence analyst tasked with summarizing reports. "
+            "Provide a clear, concise, and accurate summary focusing on key facts, strategic implications, "
+            "and ethical considerations. Return only the final summary.\n\n"
+            f"{text}"
+        )
+
+        # --- Generate content using the model instance ---
+        response = model.generate_content(prompt)
+        # --- End Generation ---
+
+        # --- Handle Response ---
+        # (Response handling code remains the same)
+        if response and hasattr(response, 'text') and response.text:
+             return response.text.strip()
+        elif response and hasattr(response, 'candidates') and response.candidates:
+             if response.candidates[0].content and response.candidates[0].content.parts:
+                 full_text = "".join(part.text for part in response.candidates[0].content.parts)
+                 return full_text.strip()
+             else:
+                 logger.warning("Gemini response structure unexpected (candidates without content/parts).")
+                 return "Error: Could not extract summary from Gemini response structure."
+        else:
+            logger.warning(f"Gemini response did not contain text or expected structure: {response}")
+            return "Error: No summary generated or unexpected response format."
+        # --- End Response Handling ---
+
+    except ImportError:
+        logger.error("google.generativeai package not found. Please install it using 'pip install google-generativeai'")
+        return "Error: google-generativeai package not installed."
+    except Exception as e:
+        # Catch potential errors during model initialization or generation
+        logger.error(f"Error calling Gemini API ({model_name_to_use}) via google.generativeai: {e}")
+        error_details = str(e)
+        if hasattr(e, 'message'):
+             error_details = e.message
+        if "permission denied" in error_details.lower() or \
+           "not found" in error_details.lower() or \
+           "quota" in error_details.lower() or \
+           "resource_exhausted" in error_details.lower():
+             error_details += " (This might be due to using a Preview model. Check access permissions, model availability, and API quotas.)"
+        return f"Error: Could not generate summary using Gemini API. Details: {error_details}"
 
 if __name__ == "__main__":
     # Test BART model loading

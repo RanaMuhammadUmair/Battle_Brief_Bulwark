@@ -36,7 +36,7 @@ const UploadPage = () => {
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [manualText, setManualText] = useState("");
-  const [model, setModel] = useState("gpt4");
+  const [model, setModel] = useState("t5");
   const [summaries, setSummaries] = useState({});
   const [storedSummaries, setStoredSummaries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -216,7 +216,7 @@ const UploadPage = () => {
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a237e" }}>
-          Upload and Summarize
+          Nato Intelligence Reports Summarizer
         </Typography>
         <Button variant="contained" onClick={handleLogout} sx={{ backgroundColor: "#1a237e" }}>
           Logout
@@ -265,11 +265,11 @@ const UploadPage = () => {
               onChange={(e) => setModel(e.target.value)}
               sx={{ mt: 2 }}
             >
-              <MenuItem value="gpt4">GPT-4</MenuItem>
+              <MenuItem value="gpt4.1">GPT-4.1 by OpenAi</MenuItem>
               <MenuItem value="bart">BART</MenuItem>
               <MenuItem value="claude">CLAUDE</MenuItem>
               <MenuItem value="t5">T5</MenuItem>
-              <MenuItem value="google-pegasus">Google Pegasus</MenuItem>
+              <MenuItem value="gemini2point5_pro">Gemini 2.5 Pro</MenuItem>
               <MenuItem value="deepseek-r1">DeepSeek-R1-runpod</MenuItem>
             </Select>
           </FormControl>

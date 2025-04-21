@@ -46,6 +46,7 @@ const LoginPage = () => {
                         value={username} 
                         onChange={e => setUsername(e.target.value)}
                         required 
+                        className="bg-white text-gray-700" // Set background to white and text color
                     />
                 </div>
                 <div className="form-group">
@@ -55,6 +56,7 @@ const LoginPage = () => {
                         value={password} 
                         onChange={e => setPassword(e.target.value)}
                         required 
+                        className="bg-white text-gray-700" // Set background to white and text color
                     />
                 </div>
                 <button type="submit" className="btn">Login</button>

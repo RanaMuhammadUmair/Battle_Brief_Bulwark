@@ -54,6 +54,7 @@ async def summarize(files: List[UploadFile] = File(...), model: str = Form(...),
     """
     Upload one or more files and summarize their content.
     """
+    logger.info(f"Received summarization request for user: {user_id} with model: {model}")
     summaries = {}
     for file in files:
         logger.info(f"Received summarization request for file: {file.filename} using model: {model}")

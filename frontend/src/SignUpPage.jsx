@@ -50,6 +50,7 @@ const SignUpPage = () => {
                         value={username}
                         onChange={e => setUsername(e.target.value)}
                         required 
+                        className="bg-white text-gray-700"
                     />
                 </div>
                 <div className="form-group">
@@ -58,6 +59,7 @@ const SignUpPage = () => {
                         placeholder="Full Name" 
                         value={fullName}
                         onChange={e => setFullName(e.target.value)}
+                        className="bg-white text-gray-700"
                     />
                 </div>
                 <div className="form-group">
@@ -67,6 +69,7 @@ const SignUpPage = () => {
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         required 
+                        className="bg-white text-gray-700"
                     />
                 </div>
                 <div className="form-group">
@@ -76,6 +79,7 @@ const SignUpPage = () => {
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         required 
+                        className="bg-white text-gray-700"
                     />
                 </div>
                 <button type="submit" className="btn">Sign Up</button>
