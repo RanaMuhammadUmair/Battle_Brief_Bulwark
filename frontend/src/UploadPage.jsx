@@ -23,13 +23,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { keyframes } from "@emotion/react";
 
-// Define a strobing keyframes animation
-const strobEffect = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-`;
-
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 
 const UploadPage = () => {
@@ -304,7 +297,13 @@ const UploadPage = () => {
           )}
           
           {/* Live Generated Summaries Area */}
-          <Box sx={{ mt: 4 }}>
+          <Box
+            sx={{
+              mt: 4,
+              borderRadius: 1,
+              p: 0,
+            }}
+          >
             {selectedSummary ? (
               <Box sx={{ mb: 3 }}>
                 <Chip
@@ -377,7 +376,6 @@ const UploadPage = () => {
                 </Button>
               </Box>
             ) : (
-              // Otherwise show the live generated summaries from POST response
               Object.keys(summaries).length > 0 &&
               Object.entries(summaries).map(([filename, summary]) => (
                 <Box key={filename} sx={{ mb: 3 }}>

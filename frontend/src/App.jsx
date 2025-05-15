@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import UploadPage from './UploadPage.jsx';
-import SummariesPage from './SummariesPage.jsx';
 import LoginPage from './LoginPage.jsx';
 import SignUpPage from './SignUpPage.jsx';
 
@@ -24,19 +23,8 @@ function App() {
             </PrivateRoute>
           } 
         />
-        <Route 
-          path="/summaries" 
-          element={
-            <PrivateRoute>
-              <SummariesPage />
-            </PrivateRoute>
-          } 
-        />
         {/* Default route. Redirect to login */}
-        <Route 
-          path="*" 
-          element={<Navigate to="/login" />} 
-        />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
   );
