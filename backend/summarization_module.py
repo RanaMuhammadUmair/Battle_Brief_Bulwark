@@ -19,7 +19,7 @@ load_dotenv()
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 #RunPod API key
 runpod.api_key = os.getenv("RUNPOD_API_KEY")
-endpoint_id = os.getenv("YOUR_ENDPOINT_ID")
+
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_API_KEY")
 
 # Initialize Claude client
@@ -55,15 +55,60 @@ def summarize_text(text, model_name):
         summary = summarize_with_gemini2point5_pro(text)
     elif model_name.lower() == "deepseek-r1":
         summary = summarize_with_DeepSeek_R1_runpod(text)
+    elif model_name.lower() == "llama3-point-1":
+        summary = summarize_with_llama3_point_1(text)
     else:
         return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, T5, or Gemini 2.5 Pro."
     return summary
 
-def summarize_with_DeepSeek_R1_runpod(text):
-    logger.info("Summarizing with DeepSeek-R1-Distill-Qwen-1.5B model on RunPod")
-    summarize_text= " "
 
-    url = f"https://api.runpod.ai/v2/{endpoint_id}/openai/v1/chat/completions"
+
+def summarize_with_llama3_point_1(text: str) -> str:
+    """Summarize text using RunPod’s Llama-3.1 via the OpenAI-compatible endpoint."""
+    runpod_llama_endpoint_id = os.getenv("LLAMA3_POINT_1_ENDPOINT_ID")
+    url = f"https://api.runpod.ai/v2/{runpod_llama_endpoint_id}/openai/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.getenv('RUNPOD_API_KEY')}"
+    }
+    data = {
+        "model": "meta-llama/Llama-3.1-8B-Instruct",
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You are a military intelligence summarizer. "
+                    "Provide an accurate, concise summary of the following report, "
+                    "focusing on key facts, strategic implications, and ethical considerations. "
+                    "Return only the final summary."
+                )
+            },
+            {
+                "role": "user",
+                "content": text
+            }
+        ],
+        "temperature": 0.3,
+        "max_tokens": 5000,
+        "presence_penalty": 0.1
+    }
+    try:
+        response = requests.post(url, headers=headers, json=data, timeout=90)
+        response.raise_for_status()
+        result = response.json()
+        # extract content
+        content = result["choices"][0]["message"]["content"]
+        return content.strip()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"RunPod Llama-3.1 error: {e} – response: {getattr(response, 'text', '')}")
+        return "Error: Could not generate summary using Llama-3.1. Please try again later."
+    except (KeyError, IndexError):
+        return "Error: Unexpected response format from Llama-3.1."
+
+
+def summarize_with_DeepSeek_R1_runpod(text):
+    deepseek_R1_endpoint_id = os.getenv("DEEPSEEK_R1_ENDPOINT_ID")
+    url = f"https://api.runpod.ai/v2/{deepseek_R1_endpoint_id}/openai/v1/chat/completions"
 
     headers = {
         'Content-Type': 'application/json',
@@ -71,7 +116,7 @@ def summarize_with_DeepSeek_R1_runpod(text):
     }
 
     data = {
-        "model": "deepseek-ai/deepseek-r1-distill-qwen-1.5b",  # ✅ Now explicitly included
+        "model": "deepseek-ai/deepseek-r1-distill-qwen-1.5b",  
         "messages": [
             {
     "role": "user",
@@ -94,20 +139,16 @@ def summarize_with_DeepSeek_R1_runpod(text):
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
-        result = response.json()
-        logger.info(f"LLM summary response: {result}")   
+        result = response.json()  
         # Extracting the summary content
         content = result['choices'][0]['message']['content']
         summary_start = content.find('</think>\n\n') + len('</think>\n\n')  # Find where the summary starts
         summary = content[summary_start:].strip()  # Get the rest of the content after that point
         # Log the extracted summary
-        logger.info(f"LLM summary: {summary}")
         return summary
     except requests.exceptions.RequestException as e:
-        logger.error(f"An error occurred: {e}")
-        return "Error: Could not generate summary using DeepSeek-R1-Distill-Qwen-1.5B."
+        return "Error: Could not generate summary using DeepSeek-R1.Some times initialization of the Gpu at RunPod takes time. Please try again after some time."
     except KeyError as e:
-        logger.error(f"Unexpected response format: {e}, response was: {response.text}")
         return "Error: Unexpected response format from model."
 
 
@@ -229,7 +270,7 @@ def summarize_with_gemini2point5_pro(text):
     """
     # Loading the API key from environment variables
     api_key = os.getenv("GOOGLE_GENAI_API_KEY")
-    model_name_to_use = "gemini-2.5-pro-preview-03-25" 
+    model_name_to_use = "gemini-2.5-pro-preview-05-06" 
 
     try:
         # Configuring the genai library using the imported alias

@@ -264,6 +264,7 @@ const UploadPage = () => {
               <MenuItem value="t5">T5</MenuItem>
               <MenuItem value="gemini2point5_pro">Gemini 2.5 Pro</MenuItem>
               <MenuItem value="deepseek-r1">DeepSeek-R1-runpod</MenuItem>
+              <MenuItem value="llama3-point-1">Llama 3 Point 1</MenuItem>
             </Select>
           </FormControl>
 
