@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { keyframes } from "@emotion/react";
+import { jsPDF } from "jspdf";
 
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 
@@ -375,6 +376,19 @@ const UploadPage = () => {
                 >
                   Copy to Clipboard
                 </Button>
+
+                {/* Download PDF */}
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    const doc = new jsPDF();
+                    doc.text(selectedSummary.summary, 10, 10, { maxWidth: 190 });
+                    doc.save(`${selectedSummary.filename || "summary"}.pdf`);
+                  }}
+                  sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
+                >
+                  Download PDF
+                </Button>
               </Box>
             ) : (
               Object.keys(summaries).length > 0 &&
@@ -408,6 +422,19 @@ const UploadPage = () => {
                     sx={{ backgroundColor: "#1a237e", mt: 1 }}
                   >
                     Copy to Clipboard
+                  </Button>
+
+                  {/* Download PDF */}
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      const doc = new jsPDF();
+                      doc.text(summary, 10, 10, { maxWidth: 190 });
+                      doc.save(`${filename}_summary.pdf`);
+                    }}
+                    sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
+                  >
+                    Download PDF
                   </Button>
                 </Box>
               ))
