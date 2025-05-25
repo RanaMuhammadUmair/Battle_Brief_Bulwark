@@ -23,6 +23,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { keyframes } from "@emotion/react";
 import { jsPDF } from "jspdf";
+import DeleteIcon from "@mui/icons-material/Delete";
+import IconButton from "@mui/material/IconButton";
 
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 
@@ -145,6 +147,20 @@ const UploadPage = () => {
     navigate("/login");
   };
 
+  // Delete handler for removing a summary
+  const handleDelete = async (id) => {
+    const token = localStorage.getItem("token");
+    try {
+      await fetch(`http://localhost:8000/summaries/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchStoredSummaries();
+    } catch (e) {
+      console.error("Delete failed", e);
+    }
+  };
+
   // Load stored summaries when component mounts
   useEffect(() => {
     fetchStoredSummaries();
@@ -159,32 +175,42 @@ const UploadPage = () => {
 
     return (
       <Box sx={{ width: 300, p: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Summary History
-        </Typography>
+        <Typography variant="h6">Summary History</Typography>
         <Divider />
         {sortedSummaries.length === 0 ? (
-          <Typography variant="body2" sx={{ mt: 2 }}>
-            No summaries available.
-          </Typography>
+          <Typography sx={{ mt: 2 }}>No summaries available.</Typography>
         ) : (
           <List>
-            {sortedSummaries.map((item, index) => (
+            {sortedSummaries.map((item) => (
               <ListItem
-                key={index}
+                key={item.id}
                 button
                 onClick={() => {
                   setSelectedSummary(item);
                   setDrawerOpen(false);
                 }}
+                secondaryAction={
+                  <IconButton
+                    edge="end"
+                    color="error"
+                    onClick={(e) => {
+                      e.stopPropagation();          // ← prevent ListItem onClick
+                      handleDelete(item.id);
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                }
               >
                 <ListItemText
                   primary={item.filename}
                   secondary={
                     <>
-                      <span>{item.summary.slice(0, 50)}...</span>
+                      <span>{item.summary.slice(0, 50)}…</span>
                       <br />
-                      <small>{new Date(item.created_at).toLocaleString()}</small>
+                      <small>
+                        {new Date(item.created_at).toLocaleString()}
+                      </small>
                     </>
                   }
                 />
