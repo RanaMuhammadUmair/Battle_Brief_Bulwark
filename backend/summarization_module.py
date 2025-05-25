@@ -32,11 +32,6 @@ def load_models():
     """Initialize models on first use to save memory"""
     if not models.get("bart"):
         models["bart"] = pipeline("summarization", model="facebook/bart-large-cnn")
-    
-    if not models.get("t5"):
-        t5_tokenizer = AutoTokenizer.from_pretrained("t5-small")
-        t5_model = AutoModelForSeq2SeqLM.from_pretrained("t5-small", low_cpu_mem_usage=True)
-        models["t5"] = (t5_model, t5_tokenizer)
 
 def summarize_text(text, model_name):
     # Make sure models are loaded
@@ -80,7 +75,7 @@ def summarize_with_llama3_point_1(text: str) -> str:
                     "You are a military intelligence summarizer. "
                     "Provide an accurate, concise summary of the following report, "
                     "focusing on key facts, strategic implications, and ethical considerations. "
-                    "Return only the final summary."
+                    "Return only the final summary in plain text."
                 )
             },
             {
@@ -89,7 +84,7 @@ def summarize_with_llama3_point_1(text: str) -> str:
             }
         ],
         "temperature": 0.3,
-        "max_tokens": 5000,
+        "max_tokens": 3000,
         "presence_penalty": 0.1
     }
     try:
@@ -124,7 +119,7 @@ def summarize_with_DeepSeek_R1_runpod(text):
         "You are required to produce a single, clear, accurate summary of the following military intelligence report. "
         "You have only one chance. Focus on key facts, strategic implications, and ethical considerations. "
         "Do not respond in a conversational or reflective style. Do not say things like 'I think' or 'Let's analyze.' "
-        "Return only the final summary, formatted for presentation in a secure military system.\n\n"
+        "Return only the final summary in plain text\n\n"
         f"{text}"
         
         )
@@ -132,7 +127,7 @@ def summarize_with_DeepSeek_R1_runpod(text):
 
         ],
         "temperature": 0.3,
-        "max_tokens": 5000,
+        "max_tokens": 3000,
         "presence_penalty": 0.1,
     }
 
@@ -172,7 +167,7 @@ def summarize_with_gpt_4point1(text):
                 },
                 {
                     "role": "user",
-                    "content": f"Summarize this report and return text in well formatted way. Here is report text:\n\n{text}"
+                    "content": f"Summarize this report and return only summary plain text. Here is report text:\n\n{text}"
                 }
             ],
             max_tokens=5000, # Limiting the output length / can be changed
@@ -190,9 +185,9 @@ def summarize_with_claude(text):
     try:
         response = claude_client.messages.create(
             model="claude-2",
-            max_tokens=500,
+            max_tokens=1000,
             messages=[
-                {"role": "user", "content": f"Summarize this military report concisely:\n\n{text}"}
+                {"role": "user", "content": f"Summarize this military report and return summary in plain text:\n\n{text}"}
             ],
             system="You are a military intelligence analyst. Provide accurate, concise summaries that highlight key strategic information while maintaining appropriate security measures."
         )
@@ -282,7 +277,7 @@ def summarize_with_gemini2point5_pro(text):
             "You are a military intelligence analyst tasked with summarizing reports. "
             "Provide accurate summaries that capture key information while maintaining appropriate security posture and taking care of ethical considerations."
             "Return only the final summary.\n\n"
-            "Summarize this report and return text in a well-formatted way. Here is report text:\n\n" + text
+            "Summarize this report and return only summary plain text. Here is report text:\n\n" + text
         )
         #Generating content using the model instance
         response = model.generate_content(prompt)
