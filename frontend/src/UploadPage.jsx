@@ -19,7 +19,13 @@ import {
   ListItemText,
   Divider,
   TextField,
-  IconButton
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
@@ -100,7 +106,7 @@ const UploadPage = ({ user }) => {
         summary,
         metadata
       }));
-      setSummaries((prev) => [...live, ...prev]);
+      setSummaries(live);
       fetchStoredSummaries();
     } catch (e) {
       console.error(e);
@@ -290,63 +296,195 @@ const UploadPage = ({ user }) => {
                 <Card variant="outlined" sx={{ mt: 2 }}>
                   <CardContent>
                     <Typography variant="h6">Ethical Considerations</Typography>
-                    {Object.entries(JSON.parse(selectedSummary.metadata).detox || {}).map(([lbl, sc]) => (
-                      <Typography key={lbl}>{lbl.replace(/_/g, " ")}: {(sc * 100).toFixed(1)}%</Typography>
-                    ))}
+                    {(() => {
+                      const md = JSON.parse(selectedSummary.metadata);
+                      const report = md.detox_report || {};
+                      const summary = md.detox_summary || {};
+                      const labels = Object.keys(summary);
+
+                      return (
+                        <TableContainer component={Paper} sx={{ mt: 1 }}>
+                          <Table
+                            id="ethics-table"
+                            size="small"
+                            sx={{
+                              tableLayout: 'fixed',
+                              width: '100%'
+                            }}
+                          >
+                            <TableHead>
+                              <TableRow>
+                                <TableCell sx={{ width: '25%' }}>Category</TableCell>
+                                <TableCell sx={{ width: '25%' }} align="right">Report Text</TableCell>
+                                <TableCell sx={{ width: '25%' }} align="right">Summary</TableCell>
+                                <TableCell sx={{ width: '25%' }} align="right">Difference</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {labels.map(lbl => {
+                                const reportVal  = Number(((report[lbl]  || 0) * 100).toFixed(4));
+                                const summaryVal = Number(((summary[lbl] || 0) * 100).toFixed(4));
+                                const diff       = Number((summaryVal - reportVal).toFixed(4));
+                                return (
+                                  <TableRow key={lbl}>
+                                    <TableCell>{lbl.replace(/_/g,' ')}</TableCell>
+                                    <TableCell align="right">{reportVal.toFixed(4)}%</TableCell>
+                                    <TableCell align="right">{summaryVal.toFixed(4)}%</TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sx={{ color: diff <= 0 ? 'success.main' : 'error.main' }}
+                                    >
+                                      {diff > 0 ? '+' : ''}{diff.toFixed(4)}%
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                              {/* Overall row (average) */}
+                              <TableRow>
+                                <TableCell><strong>Overall</strong></TableCell>
+                                {(() => {
+                                  const avg = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+                                  const rs = labels.map(l=>report[l]*100), ss = labels.map(l=>summary[l]*100);
+                                  const or = avg(rs), os = avg(ss), od = os - or;
+                                  return [or, os, od].map((v,i) => (
+                                    <TableCell key={i} align="right">
+                                      <strong>
+                                        {i<2 ? v.toFixed(1)+'%' : (od>0?'+':'')+od.toFixed(1)+'%'}
+                                      </strong>
+                                    </TableCell>
+                                  ))
+                                })()}
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               </Box>
             ) : (
               summaries.length > 0 &&
-              summaries.map((s, i) => (
-                <Box key={i} sx={{ mb: 3 }}>
-                  <Chip label={`Summary of "${s.filename}"`} sx={{ mb: 1, backgroundColor: "#ffb74d" }} />
-                  <Chip label={`Model "${s.metadata && s.metadata.model ? s.metadata.model : (JSON.parse(s.metadata || "{}").model || "N/A")}"`} sx={{ mb: 1, backgroundColor: "#c5e1a5" }} />
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography sx={{ whiteSpace: "pre-wrap" }}>{s.summary}</Typography>
-                    </CardContent>
-                  </Card>
-                  <Button
-                    variant="contained"
-                    sx={{ mt: 1, backgroundColor: "#1a237e" }}
-                    onClick={() => navigator.clipboard.writeText(s.summary)}
-                  >
-                    Copy
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
-                    onClick={() => {
-                      const doc = new jsPDF();
-                      doc.text(s.summary, 10, 10, { maxWidth: 190 });
-                      doc.save(`${s.filename}_summary.pdf`);
-                    }}
-                  >
-                    Download PDF
-                  </Button>
-                  <Typography variant="subtitle1" sx={{ mt: 2 }}>Ethical Considerations</Typography>
-                  {Object.entries(s.metadata.detox || {}).map(([lbl, sc]) => (
-                    <Typography key={lbl}>{lbl.replace(/_/g, " ")}: {(sc * 100).toFixed(1)}%</Typography>
-                  ))}
-                </Box>
-              ))
+              summaries.map((s, i) => {
+                const report        = s.metadata.detox_report || {};
+                const summaryScores = s.metadata.detox_summary || {};
+                const labels        = Object.keys(summaryScores);
+
+                return (
+                  <Box key={i} sx={{ mb: 3 }}>
+                    <Chip label={`Summary of "${s.filename}"`} sx={{ mb: 1, backgroundColor: "#ffb74d" }} />
+                    <Chip label={`Model "${s.metadata && s.metadata.model ? s.metadata.model : (JSON.parse(s.metadata || "{}").model || "N/A")}"`} sx={{ mb: 1, backgroundColor: "#c5e1a5" }} />
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography sx={{ whiteSpace: "pre-wrap" }}>{s.summary}</Typography>
+                      </CardContent>
+                    </Card>
+                    <Button
+                      variant="contained"
+                      sx={{ mt: 1, backgroundColor: "#1a237e" }}
+                      onClick={() => navigator.clipboard.writeText(s.summary)}
+                    >
+                      Copy
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
+                      onClick={() => {
+                        const doc = new jsPDF();
+                        doc.text(s.summary, 10, 10, { maxWidth: 190 });
+                        doc.save(`${s.filename}_summary.pdf`);
+                      }}
+                    >
+                      Download PDF
+                    </Button>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ mt: 2 }}
+                    >
+                      Ethical Considerations
+                    </Typography>
+                    {(() => {
+                      const report = s.metadata.detox_report || {};
+                      const summaryScores = s.metadata.detox_summary || {};
+                      const labels = Object.keys(summaryScores);
+
+                      return (
+                        <TableContainer component={Paper} sx={{ mt: 1 }}>
+                          <Table
+                            id={`ethics-table-${i}`}
+                            size="small"
+                            sx={{ tableLayout: 'fixed', width: '100%' }}
+                          >
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Category</TableCell>
+                                <TableCell align="right">
+                                  Report Text
+                                </TableCell>
+                                <TableCell align="right">Summary</TableCell>
+                                <TableCell align="right">Difference</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {labels.map(lbl => {
+                                const r  = Number(((report[lbl]         || 0) * 100).toFixed(4));
+                                const sC = Number(((summaryScores[lbl] || 0) * 100).toFixed(4));
+                                const d  = Number((sC - r).toFixed(4));
+                                return (
+                                  <TableRow key={lbl}>
+                                    <TableCell>{lbl.replace(/_/g, ' ')}</TableCell>
+                                    <TableCell align="right">{r.toFixed(4)}%</TableCell>
+                                    <TableCell align="right">{sC.toFixed(4)}%</TableCell>
+                                    <TableCell
+                                      align="right"
+                                      // green when d ≤ 0 (i.e. reduction or no change), red when d > 0
+                                      sx={{ color: d <= 0 ? 'success.main' : 'error.main' }}
+                                    >
+                                      {d > 0 ? '+' : ''}{d.toFixed(4)}%
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              })}
+                              {/* Overall row (average) */}
+                              <TableRow>
+                                <TableCell><strong>Overall</strong></TableCell>
+                                {(() => {
+                                  const avg = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+                                  const rs = labels.map(l=>report[l]*100), ss = labels.map(l=>summaryScores[l]*100);
+                                  const or = avg(rs), os = avg(ss), od = os - or;
+                                  return [or, os, od].map((v,i) => (
+                                    <TableCell key={i} align="right">
+                                      <strong>
+                                        {i<2 ? v.toFixed(1)+'%' : (od>0?'+':'')+od.toFixed(1)+'%'}
+                                      </strong>
+                                    </TableCell>
+                                  ))
+                                })()}
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      );
+                    })()}
+                  </Box>
+                );
+              })
             )}
           </Box>
         </Paper>
       </Box>
 
-      {/* History drawer */}
+      {/* History Drawer */}
       <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        {renderHistory()}
+        <Box
+          sx={{ width: 300 }}
+          role="presentation"
+          onClick={() => setDrawerOpen(false)}
+          onKeyDown={() => setDrawerOpen(false)}
+        >
+          {renderHistory()}
+        </Box>
       </Drawer>
-
-      {/* Footer */}
-      <Box component="footer" sx={{ p: 2, borderTop: "1px solid #ccc", backgroundColor: "#f5f5f5" }}>
-        <Typography variant="body2">
-          <strong>Disclaimer:</strong> This is a thesis project. Do not upload confidential documents.
-        </Typography>
-      </Box>
     </Box>
   );
 };

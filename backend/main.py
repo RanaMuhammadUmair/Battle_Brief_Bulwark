@@ -81,17 +81,20 @@ async def summarize(
             logger.info(f"Generating summary using {model} model for file: {file.filename}...")
             summary = summarize_text(plain_text, model)
             
-            # run Detoxify
-            detox_scores = detox_model.predict(summary)
-            
-            # convert float32 to native Python floats for JSON serialization
-            detox_scores = {label: float(score) for label, score in detox_scores.items()}
-            
-            # inject detox scores into metadata
+            # run Detoxify on the generated summary
+            summary_scores = detox_model.predict(summary)
+            summary_scores = {label: float(score) for label, score in summary_scores.items()}
+
+            # run Detoxify on the original report text
+            report_scores = detox_model.predict(plain_text)
+            report_scores = {label: float(score) for label, score in report_scores.items()}
+
+            # inject both into metadata
             metadata = {
               "filename": file.filename,
               "model": model,
-              "detox": detox_scores
+              "detox_summary": summary_scores,
+              "detox_report": report_scores
             }
             
             db.save_summary(user_id, plain_text, summary, metadata)
