@@ -19,169 +19,119 @@ import {
   ListItemText,
   Divider,
   TextField,
+  IconButton
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { keyframes } from "@emotion/react";
-import { jsPDF } from "jspdf";
 import DeleteIcon from "@mui/icons-material/Delete";
-import IconButton from "@mui/material/IconButton";
+import { useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
 
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 
-const UploadPage = () => {
+const UploadPage = ({ user }) => {
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [manualText, setManualText] = useState("");
-  const [model, setModel] = useState("t5");
-  const [summaries, setSummaries] = useState({});
+  const [model, setModel] = useState("T5");
+  const [summaries, setSummaries] = useState([]);
   const [storedSummaries, setStoredSummaries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedSummary, setSelectedSummary] = useState(null);
 
-  // File selection handler with file type validation
+  // File change
   const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    const validFiles = selectedFiles.filter((file) => {
-      const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-      if (supportedFileTypes.includes(extension)) {
-        return true;
-      } else {
-        alert(
-          `File "${file.name}" is not supported. Allowed types: ${supportedFileTypes.join(", ")}`
-        );
+    const valid = Array.from(e.target.files).filter((f) => {
+      const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
+      if (!supportedFileTypes.includes(ext)) {
+        alert(`"${f.name}" not supported.`);
         return false;
       }
+      return true;
     });
-    setFiles(validFiles);
-    // Clear the selected summary when selecting new files
+    setFiles(valid);
     setSelectedSummary(null);
   };
 
-  // Summarize handler with manual text input support
-  const handleSummarize = async () => {
-    // If no file is selected and no manual text is provided, alert the user.
-    if (files.length === 0 && manualText.trim() === "") {
-      alert("Please select at least one file or enter text manually!");
+  // Fetch stored summaries
+  const fetchStoredSummaries = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const username = localStorage.getItem("username");
+      const res = await fetch(`http://localhost:8000/summaries?user=${username}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setStoredSummaries(data.summaries || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchStoredSummaries();
+  }, []);
+
+  const handleSummarize = async (e) => {
+    e.preventDefault();
+    if (!files.length && !manualText.trim()) {
+      alert("Select file or enter text!");
       return;
     }
-    // Retrieve username from localStorage
     const username = localStorage.getItem("username");
-    if (!username) {
-      alert("User information is missing. Please log in again.");
-      navigate("/login");
-      return;
-    }
-    // Clear any selected summary so the live view updates with new results.
-    setSelectedSummary(null);
+    if (!username) return navigate("/login");
+
     setLoading(true);
-    const formData = new FormData();
-
-    // Append selected files
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
-
-    // If manual text is provided, create a file from it.
-    if (manualText.trim() !== "") {
-      const date = new Date();
-      // Replace colon and dot for safe file naming
-      const timestamp = date
-        .toISOString()
-        .replace(/[:.]/g, "-");
-      const fileName = `clipboardtext-${timestamp}.txt`;
-      const textFile = new File([manualText], fileName, { type: "text/plain" });
-      formData.append("files", textFile);
+    setSelectedSummary(null);
+    const form = new FormData();
+    files.forEach((f) => form.append("files", f));
+    if (manualText.trim()) {
+      const ts = new Date().toISOString().replace(/[:.]/g, "-");
+      form.append("files", new File([manualText], `clipboard-${ts}.txt`));
     }
-
-    formData.append("model", model);
-    // Send the username as user_id so backend can store the summary
-    formData.append("user_id", username);
+    form.append("model", model);
+    form.append("user_id", username);
 
     try {
-      const response = await fetch("http://localhost:8000/summarize", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
-      setSummaries(data);
-      // Refresh stored summaries after generating a new summary
+      const res = await fetch("http://localhost:8000/summarize", { method: "POST", body: form });
+      const result = await res.json();
+      const live = Object.entries(result).map(([filename, { summary, metadata }]) => ({
+        filename,
+        summary,
+        metadata
+      }));
+      setSummaries((prev) => [...live, ...prev]);
       fetchStoredSummaries();
-    } catch (error) {
-      console.error(error);
+    } catch (e) {
+      console.error(e);
       setErrorMsg("Summarization failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // Toggle drawer (history) open/close
-  const toggleDrawer = (open) => () => {
-    setDrawerOpen(open);
-  };
-
-  // Fetch stored summaries from backend for the logged-in user
-  const fetchStoredSummaries = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const username = localStorage.getItem("username");
-      const response = await fetch(`http://localhost:8000/summaries?user=${username}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      // Expecting an array of summaries with filename and summary fields.
-      setStoredSummaries(data.summaries || []);
-    } catch (error) {
-      console.error("Failed fetching stored summaries", error);
-    }
-  };
-
-  // Logout handler: remove token and navigate to login
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    navigate("/login");
-  };
-
-  // Delete handler for removing a summary
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
-    try {
-      await fetch(`http://localhost:8000/summaries/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchStoredSummaries();
-    } catch (e) {
-      console.error("Delete failed", e);
-    }
+    await fetch(`http://localhost:8000/summaries/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    fetchStoredSummaries();
   };
 
-  // Load stored summaries when component mounts
-  useEffect(() => {
-    fetchStoredSummaries();
-  }, []);
-
-  // Render history drawer: only the list is shown
   const renderHistory = () => {
-    // Sort the stored summaries in descending order (most recent first)
-    const sortedSummaries = [...storedSummaries].sort(
+    const sorted = [...storedSummaries].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
-
     return (
       <Box sx={{ width: 300, p: 2 }}>
         <Typography variant="h6">Summary History</Typography>
-        <Divider />
-        {sortedSummaries.length === 0 ? (
-          <Typography sx={{ mt: 2 }}>No summaries available.</Typography>
+        <Divider sx={{ mb: 2 }} />
+        {sorted.length === 0 ? (
+          <Typography>No summaries.</Typography>
         ) : (
           <List>
-            {sortedSummaries.map((item) => (
+            {sorted.map((item) => (
               <ListItem
                 key={item.id}
                 button
@@ -194,7 +144,7 @@ const UploadPage = () => {
                     edge="end"
                     color="error"
                     onClick={(e) => {
-                      e.stopPropagation();          // ← prevent ListItem onClick
+                      e.stopPropagation();
                       handleDelete(item.id);
                     }}
                   >
@@ -206,11 +156,11 @@ const UploadPage = () => {
                   primary={item.filename}
                   secondary={
                     <>
-                      <span>{item.summary.slice(0, 50)}…</span>
+                      <span>{item.summary.slice(0, 20)}…</span>
                       <br />
-                      <small>
-                        {new Date(item.created_at).toLocaleString()}
-                      </small>
+                      <small>{new Date(item.created_at).toLocaleString()}</small>
+                      <br />
+                      <span>{JSON.parse(item.metadata).model}</span>
                     </>
                   }
                 />
@@ -224,7 +174,7 @@ const UploadPage = () => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      {/* Top Header with Title and Logout */}
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -232,236 +182,153 @@ const UploadPage = () => {
           alignItems: "center",
           p: 2,
           borderBottom: "1px solid #ccc",
-          backgroundColor: "#f5f5f5",
+          backgroundColor: "#f5f5f5"
         }}
       >
-        <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a237e" }}>
-          Nato Intelligence Reports Summarizer
+        <Typography variant="h4" sx={{ color: "#1a237e" }}>
+          Nato Intelligence Summarizer
         </Typography>
-        <Button variant="contained" onClick={handleLogout} sx={{ backgroundColor: "#1a237e" }}>
+        <Button onClick={() => {
+            localStorage.clear();
+            navigate("/login");
+          }}
+          sx={{ backgroundColor: "#1a237e" }}
+          variant="contained"
+        >
           Logout
         </Button>
       </Box>
 
       <Box sx={{ display: "flex", flex: 1 }}>
-        {/* Left Sidebar with "Show History" and "Select Files" */}
+        {/* Sidebar */}
         <Box sx={{ width: 250, p: 2, borderRight: "1px solid #ccc", backgroundColor: "#fafafa" }}>
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={toggleDrawer(true)}
-            sx={{ backgroundColor: "#1a237e", mb: 2 }}
-          >
+          <Button fullWidth variant="contained" onClick={() => setDrawerOpen(true)} sx={{ mb: 2, backgroundColor: "#1a237e" }}>
             Show History
           </Button>
-          <Button variant="contained" component="label" fullWidth sx={{ backgroundColor: "#1a237e" }}>
+          <Button fullWidth variant="contained" component="label" sx={{ backgroundColor: "#1a237e" }}>
             Select Files
-            <input type="file" hidden multiple onChange={handleFileChange} />
+            <input hidden multiple type="file" onChange={handleFileChange} />
           </Button>
-          <Box sx={{ mt: 1 }}>
-            {files.length > 0 ? (
-              files.map((file, index) => (
-                <Typography key={index} variant="body1" sx={{ color: "#757575" }}>
-                  {file.name}
-                </Typography>
-              ))
-            ) : (
-              <Typography variant="body1" sx={{ color: "#757575" }}>
-                No files selected
-              </Typography>
-            )}
+          <Box sx={{ mt: 2 }}>
+            {files.length
+              ? files.map((f, i) => (
+                  <Typography key={i} sx={{ color: "#757575" }}>
+                    {f.name}
+                  </Typography>
+                ))
+              : <Typography sx={{ color: "#757575" }}>No files selected.</Typography>}
           </Box>
         </Box>
 
-        {/* Main Content Area for uploading and live summaries */}
-        <Paper elevation={3} sx={{ p: 4, flex: 1 }}>
-          {/* Model Selection */}
+        {/* Main */}
+        <Paper elevation={3} sx={{ flex: 1, p: 4 }}>
           <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel id="model-select-label">Model</InputLabel>
-            <Select
-              labelId="model-select-label"
-              value={model}
-              label="Model"
-              onChange={(e) => setModel(e.target.value)}
-              sx={{ mt: 2 }}
-            >
-              <MenuItem value="gpt4.1">GPT-4.1 by OpenAi</MenuItem>
-              <MenuItem value="bart">BART</MenuItem>
-              <MenuItem value="claude">CLAUDE</MenuItem>
-              <MenuItem value="t5">T5</MenuItem>
-              <MenuItem value="gemini2point5_pro">Gemini 2.5 Pro</MenuItem>
-              <MenuItem value="deepseek-r1">DeepSeek-R1-runpod</MenuItem>
-              <MenuItem value="llama3-point-1">Llama 3 Point 1</MenuItem>
+            <InputLabel>Model</InputLabel>
+            <Select value={model} label="Model" onChange={(e) => setModel(e.target.value)}>
+              <MenuItem value="GPT-4.1">GPT-4.1</MenuItem>
+              <MenuItem value="BART">BART</MenuItem>
+              <MenuItem value="CLAUDE">CLAUDE</MenuItem>
+              <MenuItem value="T5">T5</MenuItem>
+              <MenuItem value="Gemini 2.5 Pro">Gemini 2.5 Pro</MenuItem>
+              <MenuItem value="DeepSeek-R1">DeepSeek-R1</MenuItem>
+              <MenuItem value="Llama 3.1">Llama 3.1</MenuItem>
             </Select>
           </FormControl>
 
-          {/* Manual Text Input Box placed below the model selection and taking full width */}
           <TextField
-            label="Enter text manually for summarizing"
             multiline
             rows={4}
             fullWidth
-            value={manualText}
-            onChange={(e) => setManualText(e.target.value)}
+            label="Or enter text"
             variant="outlined"
             sx={{ mb: 3 }}
+            value={manualText}
+            onChange={(e) => setManualText(e.target.value)}
           />
 
-          {/* Summarize Button */}
           <Button
             variant="contained"
-            color="primary"
-            onClick={handleSummarize}
             disabled={loading}
+            onClick={handleSummarize}
             sx={{ backgroundColor: "#1a237e" }}
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : "Summarize"}
+            {loading ? <CircularProgress color="inherit" size={24} /> : "Summarize"}
           </Button>
-          
-          {errorMsg && (
-            <Alert severity="error" sx={{ mt: 3 }}>
-              {errorMsg}
-            </Alert>
-          )}
-          
-          {/* Live Generated Summaries Area */}
-          <Box
-            sx={{
-              mt: 4,
-              borderRadius: 1,
-              p: 0,
-            }}
-          >
+
+          {errorMsg && <Alert severity="error" sx={{ mt: 3 }}>{errorMsg}</Alert>}
+
+          {/* Display live or selected summary */}
+          <Box sx={{ mt: 4 }}>
             {selectedSummary ? (
               <Box sx={{ mb: 3 }}>
-                <Chip
-                  label={`Summary of "${selectedSummary.filename}"`}
-                  sx={{
-                    backgroundColor: "#ffb74d",
-                    color: "#1a237e",
-                    fontSize: "1.1rem",
-                    fontWeight: "bold",
-                    px: 1.5,
-                    py: 0.5,
-                    mb: 1,
-                  }}
-                />
-                {selectedSummary.metadata &&
-                  (() => {
-                    let modelUsed = "";
-                    try {
-                      modelUsed = JSON.parse(selectedSummary.metadata).model;
-                    } catch (e) {
-                      console.error("Error parsing metadata for model", e);
-                    }
-                    return (
-                      <Chip
-                        label={`Model: ${modelUsed}`}
-                        sx={{
-                          backgroundColor: "#c5e1a5",
-                          color: "#1a237e",
-                          fontSize: "1.1rem",
-                          fontWeight: "bold",
-                          px: 1.5,
-                          py: 0.5,
-                          ml: 1,
-                          mb: 1,
-                        }}
-                      />
-                    );
-                  })()}
-                {selectedSummary.created_at && (
-                  <Chip
-                    label={`Time: ${new Date(selectedSummary.created_at).toLocaleString()}`}
-                    sx={{
-                      backgroundColor: "#ffb74d",
-                      color: "#1a237e",
-                      fontSize: "1.1rem",
-                      fontWeight: "bold",
-                      px: 1.5,
-                      py: 0.5,
-                      ml: 1,
-                      mb: 1,
-                    }}
-                  />
-                )}
+                <Chip label={`Summary of "${selectedSummary.filename}"`} sx={{ mb: 1, backgroundColor: "#ffb74d" }} />
+                <Chip label={`Model: ${JSON.parse(selectedSummary.metadata).model}`} sx={{ mb: 1, ml: 1, backgroundColor: "#c5e1a5" }} />
+                <Chip label={new Date(selectedSummary.created_at).toLocaleString()} sx={{ mb: 1, ml: 1, backgroundColor: "#ffb74d" }} />
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                      {selectedSummary.summary}
-                    </Typography>
+                    <Typography sx={{ whiteSpace: "pre-wrap" }}>{selectedSummary.summary}</Typography>
                   </CardContent>
                 </Card>
                 <Button
                   variant="contained"
-                  onClick={() => {
-                    navigator.clipboard.writeText(selectedSummary.summary);
-                    alert("Summary copied to clipboard");
-                  }}
-                  sx={{ backgroundColor: "#1a237e", mt: 1 }}
+                  sx={{ mt: 1, backgroundColor: "#1a237e" }}
+                  onClick={() => { navigator.clipboard.writeText(selectedSummary.summary); }}
                 >
-                  Copy to Clipboard
+                  Copy
                 </Button>
-
-                {/* Download PDF */}
                 <Button
                   variant="outlined"
+                  sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
                   onClick={() => {
                     const doc = new jsPDF();
                     doc.text(selectedSummary.summary, 10, 10, { maxWidth: 190 });
-                    doc.save(`${selectedSummary.filename || "summary"}.pdf`);
+                    doc.save(`${selectedSummary.filename}.pdf`);
                   }}
-                  sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
                 >
                   Download PDF
                 </Button>
+                <Card variant="outlined" sx={{ mt: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6">Ethical Considerations</Typography>
+                    {Object.entries(JSON.parse(selectedSummary.metadata).detox || {}).map(([lbl, sc]) => (
+                      <Typography key={lbl}>{lbl.replace(/_/g, " ")}: {(sc * 100).toFixed(1)}%</Typography>
+                    ))}
+                  </CardContent>
+                </Card>
               </Box>
             ) : (
-              Object.keys(summaries).length > 0 &&
-              Object.entries(summaries).map(([filename, summary]) => (
-                <Box key={filename} sx={{ mb: 3 }}>
-                  <Chip
-                    label={`Summary of "${filename}"`}
-                    sx={{
-                      backgroundColor: "#ffb74d",
-                      color: "#1a237e",
-                      fontSize: "1.1rem",
-                      fontWeight: "bold",
-                      px: 1.5,
-                      py: 0.5,
-                      mb: 1,
-                    }}
-                  />
+              summaries.length > 0 &&
+              summaries.map((s, i) => (
+                <Box key={i} sx={{ mb: 3 }}>
+                  <Chip label={`Summary of "${s.filename}"`} sx={{ mb: 1, backgroundColor: "#ffb74d" }} />
+                  <Chip label={`Model "${s.metadata && s.metadata.model ? s.metadata.model : (JSON.parse(s.metadata || "{}").model || "N/A")}"`} sx={{ mb: 1, backgroundColor: "#c5e1a5" }} />
                   <Card variant="outlined">
                     <CardContent>
-                      <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                        {summary}
-                      </Typography>
+                      <Typography sx={{ whiteSpace: "pre-wrap" }}>{s.summary}</Typography>
                     </CardContent>
                   </Card>
                   <Button
                     variant="contained"
-                    onClick={() => {
-                      navigator.clipboard.writeText(summary);
-                      alert("Summary copied to clipboard");
-                    }}
-                    sx={{ backgroundColor: "#1a237e", mt: 1 }}
+                    sx={{ mt: 1, backgroundColor: "#1a237e" }}
+                    onClick={() => navigator.clipboard.writeText(s.summary)}
                   >
-                    Copy to Clipboard
+                    Copy
                   </Button>
-
-                  {/* Download PDF */}
                   <Button
                     variant="outlined"
+                    sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
                     onClick={() => {
                       const doc = new jsPDF();
-                      doc.text(summary, 10, 10, { maxWidth: 190 });
-                      doc.save(`${filename}_summary.pdf`);
+                      doc.text(s.summary, 10, 10, { maxWidth: 190 });
+                      doc.save(`${s.filename}_summary.pdf`);
                     }}
-                    sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
                   >
                     Download PDF
                   </Button>
+                  <Typography variant="subtitle1" sx={{ mt: 2 }}>Ethical Considerations</Typography>
+                  {Object.entries(s.metadata.detox || {}).map(([lbl, sc]) => (
+                    <Typography key={lbl}>{lbl.replace(/_/g, " ")}: {(sc * 100).toFixed(1)}%</Typography>
+                  ))}
                 </Box>
               ))
             )}
@@ -469,28 +336,15 @@ const UploadPage = () => {
         </Paper>
       </Box>
 
-      {/* Drawer for Summary History */}
-      <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
+      {/* History drawer */}
+      <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         {renderHistory()}
       </Drawer>
 
-      {/* Footer Disclaimer */}
-      <Box
-        component="footer"
-        sx={{
-          mt: "auto",
-          p: 2,
-          backgroundColor: "#f5f5f5",
-          borderTop: "1px solid #ccc",
-          textAlign: "center",
-          fontSize: "0.8rem",
-          color: "#757575"
-        }}
-      >
+      {/* Footer */}
+      <Box component="footer" sx={{ p: 2, borderTop: "1px solid #ccc", backgroundColor: "#f5f5f5" }}>
         <Typography variant="body2">
-          <strong>Disclaimer: </strong>
-          This website is a Master’s thesis project of UIS student. Please do not upload or include any confidential or current intelligence reports. For testing purposes, only use historical documents that no longer carry real‐world value or anonymized/dummy data.
-          The author assumes no responsibility for any misuse of sensitive information.
+          <strong>Disclaimer:</strong> This is a thesis project. Do not upload confidential documents.
         </Typography>
       </Box>
     </Box>

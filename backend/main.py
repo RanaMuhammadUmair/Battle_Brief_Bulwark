@@ -1,5 +1,5 @@
 import logging
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import tempfile
@@ -10,6 +10,7 @@ from typing import List
 from tika import parser
 from auth import router as auth_router
 from users_db import initialize_db
+from detoxify import Detoxify
 
 # Configure logging
 logging.basicConfig(
@@ -41,6 +42,9 @@ db = Database()
 # Supported file types
 SUPPORTED_FILE_TYPES = [".txt", ".pdf", ".docx"]
 
+# load the unbiased Detoxify model once
+detox_model = Detoxify('unbiased')
+
 def handle_uploaded_file(file: UploadFile) -> str:
     """Save uploaded file temporarily and return its path"""
     logger.info(f"Handling uploaded file: {file.filename}")
@@ -50,7 +54,11 @@ def handle_uploaded_file(file: UploadFile) -> str:
         return temp_file.name
 
 @app.post("/summarize")
-async def summarize(files: List[UploadFile] = File(...), model: str = Form(...), user_id: str = Form(None)):
+async def summarize(
+    user_id: str = Form(...),
+    files: list[UploadFile] = File(None),
+    model: str = Form(...)
+):
     """
     Upload one or more files and summarize their content.
     """
@@ -72,13 +80,28 @@ async def summarize(files: List[UploadFile] = File(...), model: str = Form(...),
 
             logger.info(f"Generating summary using {model} model for file: {file.filename}...")
             summary = summarize_text(plain_text, model)
-            summaries[file.filename] = summary
-            logger.info(f"Summary generated successfully for file: {file.filename}")
-
             
-            metadata = { "filename": file.filename, "model": model }
+            # run Detoxify
+            detox_scores = detox_model.predict(summary)
+            
+            # convert float32 to native Python floats for JSON serialization
+            detox_scores = {label: float(score) for label, score in detox_scores.items()}
+            
+            # inject detox scores into metadata
+            metadata = {
+              "filename": file.filename,
+              "model": model,
+              "detox": detox_scores
+            }
+            
             db.save_summary(user_id, plain_text, summary, metadata)
             logger.info(f"Summary saved to database for user: {user_id} and file: {file.filename}")
+
+            # return both summary & metadata so the frontend can render the card
+            summaries[file.filename] = {
+                "summary": summary,
+                "metadata": metadata
+            }
 
         except Exception as e:
             logger.error(f"Error processing file {file.filename}: {str(e)}")
@@ -100,6 +123,18 @@ async def get_summaries(user: str):
     except Exception as e:
         logger.error(f"Error retrieving summaries for user {user}: {str(e)}")
         return {"summaries": []}
+
+@app.delete("/summaries/{summary_id}")
+async def delete_summary_route(summary_id: int):
+    """
+    Delete a stored summary by its ID.
+    """
+    try:
+        db.delete_summary(summary_id)
+        return {"deleted": summary_id}
+    except Exception as e:
+        logger.error(f"Error deleting summary {summary_id}: {e}")
+        raise HTTPException(status_code=500, detail="Could not delete summary")
 
 app.include_router(auth_router)
 

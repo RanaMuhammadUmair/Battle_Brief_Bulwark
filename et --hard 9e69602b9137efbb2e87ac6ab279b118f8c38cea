@@ -1,0 +1,24 @@
+[33m9e69602[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m delete icone implemented
+[33m865b9f6[m download button added
+[33mf40e01e[m adjusted promts
+[33m4bb9ccb[m meta llama 3.1 implemented
+[33m27488f7[m gemini implemented
+[33m28f6394[m time chip added to ui for historic summaries
+[33mcbc8fa5[m make db to save limited number of summaries per user
+[33m3322672[m signup page updated with field checks
+[33ma52232f[m frontend files updated
+[33m9327698[m login page and sinup page ui updated
+[33ma99eb19[m Disclaimer added in footer of website
+[33maedb733[m finalizing the gpt 4.1 model method
+[33mbc9b210[m adding functionality of summarizing from text box
+[33md0ee1f6[m login, databse and histroy implemented
+[33m93123dc[m seprating summerize text module from ethical check module.
+[33m69654ff[m bart model custmozited for large files
+[33m0cb4c18[m file type check on frontend side implepented
+[33m10409d9[m converting files to text using tika
+[33m7142e96[m multiple file selection implemented
+[33m24504fe[m added chatgpt4.1 nano
+[33md6a234d[m chatGpt 4o and deepseek r1 implemented
+[33m5c8c684[m new project
+[33m8c53816[m initial setup of backend and frontend
+[33mde05526[m Initial commit

@@ -34,12 +34,12 @@ class Database:
         self.conn.execute(query, (user_id, metadata.get("filename"), plain_text, summary, metadata_json))
         self.conn.commit()
         
-        # Retain only the last 5 summaries for this user
+        # Retain only the last 100 summaries for this user
         count_query = "SELECT COUNT(*) as count FROM summaries WHERE user_id = ?"
         count_result = self.conn.execute(count_query, (user_id,)).fetchone()
         summary_count = count_result["count"]
-        if summary_count > 1000:
-            num_to_remove = summary_count - 1000
+        if summary_count > 100:
+            num_to_remove = summary_count - 100
             delete_query = """
             DELETE FROM summaries 
             WHERE id IN (
@@ -56,3 +56,9 @@ class Database:
         query = "SELECT * FROM summaries WHERE user_id = ? ORDER BY created_at DESC"
         cursor = self.conn.execute(query, (user_id,))
         return [dict(row) for row in cursor.fetchall()]
+
+    def delete_summary(self, summary_id: int):
+        """Remove one summary row by its ID."""
+        query = "DELETE FROM summaries WHERE id = ?"
+        self.conn.execute(query, (summary_id,))
+        self.conn.commit()

@@ -17,3 +17,4 @@ runpod
 python-jose
 passlib[bcrypt]
 google-genai
+Detoxify

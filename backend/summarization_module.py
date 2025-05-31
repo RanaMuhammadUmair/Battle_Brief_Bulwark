@@ -38,19 +38,19 @@ def summarize_text(text, model_name):
     #load_models()
     summary = None  
     # Generate summary using the selected model
-    if model_name.lower() == "gpt4.1":
+    if model_name == "GPT-4.1":
         summary = summarize_with_gpt_4point1(text)
-    elif model_name.lower() == "claude":
+    elif model_name == "CLAUDE":
         summary = summarize_with_claude(text)
-    elif model_name.lower() == "bart":
+    elif model_name == "BART":
         summary = summarize_with_bart(text)
-    elif model_name.lower() == "t5":
+    elif model_name == "T5":
         summary = summarize_with_t5(text)
-    elif model_name.lower() == "gemini2point5_pro":
+    elif model_name == "Gemini 2.5 Pro":
         summary = summarize_with_gemini2point5_pro(text)
-    elif model_name.lower() == "deepseek-r1":
+    elif model_name == "DeepSeek-R1":
         summary = summarize_with_DeepSeek_R1_runpod(text)
-    elif model_name.lower() == "llama3-point-1":
+    elif model_name == "Llama 3.1":
         summary = summarize_with_llama3_point_1(text)
     else:
         return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, T5, or Gemini 2.5 Pro."
