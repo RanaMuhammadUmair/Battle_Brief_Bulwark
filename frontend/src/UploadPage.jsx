@@ -30,6 +30,16 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
 
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 
@@ -303,6 +313,7 @@ const UploadPage = ({ user }) => {
                       const labels = Object.keys(summary);
 
                       return (
+                        <>
                         <TableContainer component={Paper} sx={{ mt: 1 }}>
                           <Table
                             id="ethics-table"
@@ -358,6 +369,30 @@ const UploadPage = ({ user }) => {
                             </TableBody>
                           </Table>
                         </TableContainer>
+
+                        {/* Infographic below the table */}
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="h6">Ethical Scores Chart</Typography>
+                          <ResponsiveContainer width="100%" height={300}>
+                            <BarChart
+                              data={labels.map(lbl => ({
+                                name: lbl.replace(/_/g, ' '),
+                                Report: (report[lbl]        || 0) * 100,
+                                Summary: (summary[lbl] || 0) * 100
+                              }))}
+                              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" />
+                              <YAxis unit="%" />
+                              <Tooltip formatter={val => `${val.toFixed(2)}%`} />
+                              <Legend />
+                              <Bar dataKey="Report" fill="#8884d8" />
+                              <Bar dataKey="Summary" fill="#82ca9d" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </Box>
+                        </>
                       );
                     })()}
                   </CardContent>
@@ -366,8 +401,8 @@ const UploadPage = ({ user }) => {
             ) : (
               summaries.length > 0 &&
               summaries.map((s, i) => {
-                const report        = s.metadata.detox_report || {};
-                const summaryScores = s.metadata.detox_summary || {};
+                const report        = s.metadata.detox_report   || {};
+                const summaryScores = s.metadata.detox_summary  || {};
                 const labels        = Object.keys(summaryScores);
 
                 return (
@@ -464,8 +499,32 @@ const UploadPage = ({ user }) => {
                             </TableBody>
                           </Table>
                         </TableContainer>
+                        
                       );
                     })()}
+
+                    {/* Infographic below the table */}
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="h6">Ethical Scores Chart</Typography>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart
+                          data={labels.map(lbl => ({
+                            name: lbl.replace(/_/g, ' '),
+                            Report:  (report[lbl]        || 0) * 100,
+                            Summary: (summaryScores[lbl] || 0) * 100
+                          }))}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis unit="%" />
+                          <Tooltip formatter={val => `${val.toFixed(2)}%`} />
+                          <Legend />
+                          <Bar dataKey="Report" fill="#8884d8" />
+                          <Bar dataKey="Summary" fill="#82ca9d" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Box>
                   </Box>
                 );
               })
