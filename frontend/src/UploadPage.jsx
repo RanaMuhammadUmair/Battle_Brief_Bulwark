@@ -69,6 +69,10 @@ const UploadPage = ({ user }) => {
     setSelectedSummary(null);
   };
 
+  const handleRemoveFile = (idx) => {
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   // Fetch stored summaries
   const fetchStoredSummaries = async () => {
     try {
@@ -226,13 +230,25 @@ const UploadPage = ({ user }) => {
             <input hidden multiple type="file" onChange={handleFileChange} />
           </Button>
           <Box sx={{ mt: 2 }}>
-            {files.length
-              ? files.map((f, i) => (
-                  <Typography key={i} sx={{ color: "#757575" }}>
-                    {f.name}
-                  </Typography>
-                ))
-              : <Typography sx={{ color: "#757575" }}>No files selected.</Typography>}
+            {files.length ? (
+              files.map((f, i) => (
+                <Box
+                  key={i}
+                  sx={{ display: "flex", alignItems: "center", color: "#757575", mb: 0.5 }}
+                >
+                  <Typography sx={{ flexGrow: 1 }}>{f.name.slice(0, 22)}{f.name.length > 22 ? "…" : ""}</Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleRemoveFile(i)}
+                    aria-label="Remove file"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))
+            ) : (
+              <Typography sx={{ color: "#757575" }}>No files selected.</Typography>
+            )}
           </Box>
         </Box>
 
