@@ -101,6 +101,7 @@ const UploadPage = ({ user }) => {
 
   const handleSummarize = async (e) => {
     e.preventDefault();
+    setErrorMsg("");
     if (!files.length && !manualText.trim()) {
       alert("Select file or enter text!");
       return;
@@ -109,7 +110,6 @@ const UploadPage = ({ user }) => {
     if (!username) return navigate("/login");
 
     setLoading(true);
-    setSelectedSummary(null);
     const form = new FormData();
     files.forEach((f) => form.append("files", f));
     if (manualText.trim()) {
@@ -120,13 +120,22 @@ const UploadPage = ({ user }) => {
     form.append("user_id", username);
 
     try {
-      const res = await fetch("http://localhost:8000/summarize", { method: "POST", body: form });
+      const res = await fetch("http://localhost:8000/summarize", {
+        method: "POST",
+        body: form
+      });
       const result = await res.json();
-      const live = Object.entries(result).map(([filename, { summary, metadata }]) => ({
-        filename,
-        summary,
-        metadata
-      }));
+      // result is { filename1: { summary,… }, filename2: "Error processing file: …", … }
+      const live = Object.entries(result).map(([filename, value]) => {
+        if (typeof value === "string") {
+          return { filename, error: value };
+        }
+        return {
+          filename,
+          summary: value.summary,
+          metadata: value.metadata
+        };
+      });
       setSummaries(live);
       fetchStoredSummaries();
     } catch (e) {
@@ -424,6 +433,21 @@ const UploadPage = ({ user }) => {
             ) : (
               summaries.length > 0 &&
               summaries.map((s, i) => {
+                // if this file failed the 2500-word check, show an error card
+                if (s.error) {
+                  return (
+                    <Card key={i} variant="outlined" sx={{ mb: 2, borderColor: "error.main" }}>
+                      <CardContent>
+                        <Typography variant="subtitle1">{s.filename}</Typography>
+                        <Alert severity="error" sx={{ mt: 1 }}>
+                          {s.error}
+                        </Alert>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                // else render the normal summary card
                 const report        = s.metadata.detox_report   || {};
                 const summaryScores = s.metadata.detox_summary  || {};
                 const labels        = Object.keys(summaryScores);
@@ -431,7 +455,10 @@ const UploadPage = ({ user }) => {
                 return (
                   <Box key={i} sx={{ mb: 3 }}>
                     <Chip label={`Summary of "${s.filename}"`} sx={{ mb: 1, backgroundColor: "#ffb74d" }} />
-                    <Chip label={`Model "${s.metadata && s.metadata.model ? s.metadata.model : (JSON.parse(s.metadata || "{}").model || "N/A")}"`} sx={{ mb: 1, backgroundColor: "#c5e1a5" }} />
+                    <Chip
+                      label={`Model "${s.metadata.model}"`}
+                      sx={{ mb: 1, backgroundColor: "#c5e1a5" }}
+                    />
                     <Card variant="outlined">
                       <CardContent>
                         <Typography sx={{ whiteSpace: "pre-wrap" }}>{s.summary}</Typography>

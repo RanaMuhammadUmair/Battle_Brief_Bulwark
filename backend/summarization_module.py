@@ -12,18 +12,8 @@ import google.generativeai as genai
 # Configure logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Load API keys from environment variables (.env )
+# Load environment variables
 load_dotenv()
-# OpenAI API key
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-#RunPod API key
-runpod.api_key = os.getenv("RUNPOD_API_KEY")
-
-anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_API_KEY")
-
-# Initialize Claude client
-claude_client = anthropic.Client(api_key=anthropic_api_key)
 
 # Initialize the models (load them only once)
 models = {}
@@ -197,11 +187,14 @@ def summarize_with_claude(text):
         return f"Error: Could not generate Claude summary. {str(e)}"
 
 def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, chunk_overlap=50,
-                        chunk_max_length=500, chunk_min_length=50, final_max_length=2500, final_min_length=100):
+                        chunk_max_length=500, chunk_min_length=50, final_max_length=1500, final_min_length=50):
     """
     Summarize long text using BART with token-based chunking and hierarchical summarization.
     Allows longer summaries by increasing max_length during generation.
     """
+    text= "[INSTRUCTION BEGIN] " \
+    "Summarize the following report with ethical considerations" \
+    "[Report begins]" + text
     # Initialize tokenizer and model
     tokenizer = BartTokenizer.from_pretrained(model_name)
     model = BartForConditionalGeneration.from_pretrained(model_name)
