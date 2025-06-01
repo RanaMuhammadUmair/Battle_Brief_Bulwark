@@ -42,6 +42,7 @@ import {
 } from 'recharts';
 
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mb
 
 const UploadPage = ({ user }) => {
   const navigate = useNavigate();
@@ -59,12 +60,18 @@ const UploadPage = ({ user }) => {
   const handleFileChange = (e) => {
     const valid = Array.from(e.target.files).filter((f) => {
       const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
+
       if (!supportedFileTypes.includes(ext)) {
         alert(`"${f.name}" not supported.`);
         return false;
       }
+      if (f.size > MAX_FILE_SIZE) {
+        alert("Maximum allowed file size is 10 Mb. Please select a smaller file or contact support to increase the limit.");
+        return false;
+      }
       return true;
     });
+
     setFiles(valid);
     setSelectedSummary(null);
   };
