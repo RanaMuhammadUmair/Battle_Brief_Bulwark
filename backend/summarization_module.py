@@ -15,14 +15,6 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Initialize the models (load them only once)
-models = {}
-
-def load_models():
-    """Initialize models on first use to save memory"""
-    if not models.get("bart"):
-        models["bart"] = pipeline("summarization", model="facebook/bart-large-cnn")
-
 #global cap for all summaries (in tokens)
 MAX_SUMMARY_TOKENS = 1000
 
@@ -194,7 +186,7 @@ def summarize_with_claude_sonnet_3_7(text: str) -> str:
 
 
 def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, chunk_overlap=50,
-                        chunk_max_length=500, chunk_min_length=50, final_max_length=MAX_SUMMARY_TOKENS,  # ← default to cap
+                        chunk_max_length=500, chunk_min_length=50, final_max_length=500,  # ← default to cap
                         final_min_length=100):
     """
     Summarize long text using BART with token-based chunking and hierarchical summarization.
@@ -251,6 +243,8 @@ def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_to
     
     return final_summary
 
+
+
 def summarize_with_t5(text):
     return text
     
@@ -292,10 +286,5 @@ def summarize_with_gemini2point5_pro(text):
              error_details = e.message
         return f"Error: Could not generate summary using Gemini API. Details: {error_details}"
 
-if __name__ == "__main__":
-    # Test BART model loading
-    try:
-        load_models()
-        print("BART model loaded successfully.")
-    except Exception as e:
-        print(f"Error loading BART model: {e}")
+
+
