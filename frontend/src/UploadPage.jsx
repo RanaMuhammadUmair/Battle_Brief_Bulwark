@@ -102,6 +102,7 @@ const UploadPage = ({ user }) => {
   const handleSummarize = async (e) => {
     e.preventDefault();
     setErrorMsg("");
+    setSelectedSummary(null);
     if (!files.length && !manualText.trim()) {
       alert("Select file or enter text!");
       return;

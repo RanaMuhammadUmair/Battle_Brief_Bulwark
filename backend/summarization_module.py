@@ -23,6 +23,9 @@ def load_models():
     if not models.get("bart"):
         models["bart"] = pipeline("summarization", model="facebook/bart-large-cnn")
 
+#global cap for all summaries (in tokens)
+MAX_SUMMARY_TOKENS = 1000
+
 def summarize_text(text, model_name):
     # Make sure models are loaded
     #load_models()
@@ -31,7 +34,7 @@ def summarize_text(text, model_name):
     if model_name == "GPT-4.1":
         summary = summarize_with_gpt_4point1(text)
     elif model_name == "CLAUDE":
-        summary = summarize_with_claude(text)
+        summary = summarize_with_claude_sonnet_3_7(text)
     elif model_name == "BART":
         summary = summarize_with_bart(text)
     elif model_name == "T5":
@@ -45,8 +48,6 @@ def summarize_text(text, model_name):
     else:
         return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, T5, or Gemini 2.5 Pro."
     return summary
-
-
 
 def summarize_with_llama3_point_1(text: str) -> str:
     """Summarize text using RunPod’s Llama-3.1 via the OpenAI-compatible endpoint."""
@@ -74,7 +75,7 @@ def summarize_with_llama3_point_1(text: str) -> str:
             }
         ],
         "temperature": 0.3,
-        "max_tokens": 3000,
+        "max_tokens": MAX_SUMMARY_TOKENS,    # ← use global cap
         "presence_penalty": 0.1
     }
     try:
@@ -117,7 +118,7 @@ def summarize_with_DeepSeek_R1_runpod(text):
 
         ],
         "temperature": 0.3,
-        "max_tokens": 3000,
+        "max_tokens": MAX_SUMMARY_TOKENS,    # ← use global cap
         "presence_penalty": 0.1,
     }
 
@@ -160,8 +161,8 @@ def summarize_with_gpt_4point1(text):
                     "content": f"Summarize this report and return only summary plain text. Here is report text:\n\n{text}"
                 }
             ],
-            max_tokens=5000, # Limiting the output length / can be changed
-            temperature=0.3, # Using a low temperature for focused outputs.
+            max_tokens=MAX_SUMMARY_TOKENS,      # ← use global cap
+            temperature=0.3,
         )
         # Extracting and returning summary from the response
         return response.choices[0].message.content
@@ -170,24 +171,31 @@ def summarize_with_gpt_4point1(text):
         print(f"GPT-4.1 summarization failed: {type(e).__name__}: {e}")
         return f"Error: Could not generate GPT-4.1 summary. {str(e)}"
 
-def summarize_with_claude(text):
-    """Summarize text using Anthropic's Claude"""
+def summarize_with_claude_sonnet_3_7(text: str) -> str:
+    """Summarize text using Claude Sonnet 3.7 via the anthropic Python client."""
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     try:
-        response = claude_client.messages.create(
-            model="claude-2",
-            max_tokens=1000,
-            messages=[
-                {"role": "user", "content": f"Summarize this military report and return summary in plain text:\n\n{text}"}
-            ],
-            system="You are a military intelligence analyst. Provide accurate, concise summaries that highlight key strategic information while maintaining appropriate security measures."
+        response = client.messages.create(
+            model="claude-3-7-sonnet-20250219",
+            system=(
+                "You are a military intelligence analyst tasked with summarizing reports. "
+                "Provide accurate, concise summaries focusing on key facts, strategic implications, "
+                "and ethical considerations. Return only the final summary in plain text."
+            ),
+            messages=[{"role": "user", "content": text}],
+            max_tokens=MAX_SUMMARY_TOKENS,
+            temperature=0.3,
         )
-        return response.content[0].text
+        summarize_text = response.content[0].text.strip()
+        return summarize_text
     except Exception as e:
-        print(f"Claude summarization failed: {str(e)}")
-        return f"Error: Could not generate Claude summary. {str(e)}"
+        logger.error(f"Claude Sonnet 3.7 (anthropic) summarization failed: {e}")
+        return f"Error: Could not generate summary using Claude Sonnet 3.7. {e}"
+
 
 def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, chunk_overlap=50,
-                        chunk_max_length=500, chunk_min_length=50, final_max_length=1500, final_min_length=50):
+                        chunk_max_length=500, chunk_min_length=50, final_max_length=MAX_SUMMARY_TOKENS,  # ← default to cap
+                        final_min_length=100):
     """
     Summarize long text using BART with token-based chunking and hierarchical summarization.
     Allows longer summaries by increasing max_length during generation.
