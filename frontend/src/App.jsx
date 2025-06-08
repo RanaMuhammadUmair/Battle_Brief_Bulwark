@@ -1,8 +1,8 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import UploadPage from './UploadPage.jsx';
-import LoginPage from './LoginPage.jsx';
-import SignUpPage from './SignUpPage.jsx';
+import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import UploadPage from "./UploadPage.jsx";
+import LoginPage from "./LoginPage.jsx";
+import SignUpPage from "./SignUpPage.jsx";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -10,20 +10,32 @@ const PrivateRoute = ({ children }) => {
 };
 
 function App() {
+  const [user, setUser] = useState({ username: "", fullName: "" });
+
+  useEffect(() => {
+    // whenever App mounts, pull user info out of localStorage
+    setUser({
+      username: localStorage.getItem("username") || "",
+      fullName:  localStorage.getItem("fullName") || ""
+    });
+  }, []);
+
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
-        <Route 
-          path="/upload" 
+
+        <Route
+          path="/upload"
           element={
             <PrivateRoute>
-              <UploadPage />
+              {/* now UploadPage will receive user.username + user.fullName */}
+              <UploadPage user={user} />
             </PrivateRoute>
-          } 
+          }
         />
-        {/* Default route. Redirect to login */}
+
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

@@ -25,7 +25,8 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  Grid
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
@@ -48,13 +49,24 @@ const UploadPage = ({ user }) => {
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [manualText, setManualText] = useState("");
-  const [model, setModel] = useState("T5");
+  const [model, setModel] = useState("Detoxify");
   const [summaries, setSummaries] = useState([]);
   const [storedSummaries, setStoredSummaries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedSummary, setSelectedSummary] = useState(null);
+
+  const modelOptions = [
+    { name: "GPT-4.1",    value: "GPT-4.1",    logo: "/logos/ChatGPT-Logo.gif" },
+    { name: "BART",       value: "BART",       logo: "/logos/meta-logo.gif" },
+    { name: "CLAUDE",     value: "CLAUDE",     logo: "/logos/anthropic-logo.gif" },
+    { name: "Detoxify",         value: "Detoxify",         logo: "/logos/mistral-logo.gif" },
+    { name: "Gemini 2.5 Pro", value: "Gemini 2.5 Pro", logo: "/logos/Cgemini-logo.gif" },
+    { name: "DeepSeek-R1", value: "DeepSeek-R1", logo: "/logos/deepseek-logo.gif" },
+    { name: "Llama 3.1",  value: "Llama 3.1",  logo: "/logos/meta-logo2.gif" },
+    { name: "xAI",        value: "xAI",        logo: "/logos/xAi-logo.gif" },
+  ];
 
   // File change
   const handleFileChange = (e) => {
@@ -225,15 +237,23 @@ const UploadPage = ({ user }) => {
         <Typography variant="h4" sx={{ color: "#1a237e" }}>
           Nato Intelligence Summarizer
         </Typography>
-        <Button onClick={() => {
-            localStorage.clear();
-            navigate("/login");
-          }}
-          sx={{ backgroundColor: "#1a237e" }}
-          variant="contained"
-        >
-          Logout
-        </Button>
+
+        {/* user info + logout */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Typography variant="subtitle1" sx={{ mr: 2, color: "#333" }}>
+            {user.username} {user.fullName && `(${user.fullName})`}
+          </Typography>
+          <Button
+            onClick={() => {
+              localStorage.clear();
+              navigate("/login");
+            }}
+            sx={{ backgroundColor: "#1a237e" }}
+            variant="contained"
+          >
+            Logout
+          </Button>
+        </Box>
       </Box>
 
       <Box sx={{ display: "flex", flex: 1 }}>
@@ -271,24 +291,42 @@ const UploadPage = ({ user }) => {
 
         {/* Main */}
         <Paper elevation={3} sx={{ flex: 1, p: 4 }}>
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel>Model</InputLabel>
-            <Select value={model} label="Model" onChange={(e) => setModel(e.target.value)}>
-              <MenuItem value="GPT-4.1">GPT-4.1</MenuItem>
-              <MenuItem value="BART">BART</MenuItem>
-              <MenuItem value="CLAUDE">CLAUDE</MenuItem>
-              <MenuItem value="T5">T5</MenuItem>
-              <MenuItem value="Gemini 2.5 Pro">Gemini 2.5 Pro</MenuItem>
-              <MenuItem value="DeepSeek-R1">DeepSeek-R1</MenuItem>
-              <MenuItem value="Llama 3.1">Llama 3.1</MenuItem>
-            </Select>
-          </FormControl>
+          <Typography variant="h6" sx={{ mb: 2 }}>Select Model</Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            {modelOptions.map(opt => (
+              <Grid item xs={3} key={opt.value} sx={{ display: "flex" }} width={180} height={138}>
+                <Box
+                  onClick={() => setModel(opt.value)}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    p: 2,
+                    border: 1,
+                    borderColor: model === opt.value ? "primary.main" : "grey.300",
+                    borderRadius: 1,
+                    cursor: "pointer",
+                    backgroundColor: model === opt.value ? "primary.light" : "background.paper",
+                    // glow on selected
+                    boxShadow: model === opt.value
+                      ? "0 10px 20px rgb(0, 131, 237)"
+                      : "none",
+                    transition: "box-shadow 0.2s ease"
+                  }}
+                >
+                  <img src={opt.logo} alt={opt.name} width={160} height={160} />
+                  <Typography sx={{ mt: 1 }}>{opt.name}</Typography>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
 
           <TextField
             multiline
-            rows={4}
+            rows={8}
             fullWidth
-            label="Or enter text"
+            placeholder="Enter text manually or paste content here..."
+            label="Enter Plain Text"
             variant="outlined"
             sx={{ mb: 3 }}
             value={manualText}

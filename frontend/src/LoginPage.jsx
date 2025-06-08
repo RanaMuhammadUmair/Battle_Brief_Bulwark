@@ -27,6 +27,7 @@ const LoginPage = () => {
             const data = await response.json();
             localStorage.setItem("token", data.access_token);
             localStorage.setItem("username", username);
+            localStorage.setItem("fullName", data.full_name || "");
             navigate("/upload");  // Redirect to UploadPage on success
         } catch (err) {
             console.error(err);

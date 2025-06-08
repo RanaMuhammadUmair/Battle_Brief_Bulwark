@@ -29,7 +29,7 @@ def summarize_text(text, model_name):
         summary = summarize_with_claude_sonnet_3_7(text)
     elif model_name == "BART":
         summary = summarize_with_bart(text)
-    elif model_name == "T5":
+    elif model_name == "Detoxify":
         summary = summarize_with_t5(text)
     elif model_name == "Gemini 2.5 Pro":
         summary = summarize_with_gemini2point5_pro(text)
