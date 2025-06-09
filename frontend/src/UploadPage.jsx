@@ -29,6 +29,8 @@ import {
   Grid
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import HistoryIcon from '@mui/icons-material/History';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import {
@@ -258,11 +260,23 @@ const UploadPage = ({ user }) => {
 
       <Box sx={{ display: "flex", flex: 1 }}>
         {/* Sidebar */}
-        <Box sx={{ width: 250, p: 2, borderRight: "1px solid #ccc", backgroundColor: "#fafafa" }}>
-          <Button fullWidth variant="contained" onClick={() => setDrawerOpen(true)} sx={{ mb: 2, backgroundColor: "#1a237e" }}>
+        <Box sx={{ width: 290, p: 2, borderRight: "1px solid #ccc", backgroundColor: "#fafafa" }}>
+          <Button
+            startIcon={<HistoryIcon />}
+            fullWidth
+            variant="contained"
+            onClick={() => setDrawerOpen(true)}
+            sx={{ mb: 2, backgroundColor: "#1a237e" }}
+          >
             Show History
           </Button>
-          <Button fullWidth variant="contained" component="label" sx={{ backgroundColor: "#1a237e" }}>
+          <Button
+            startIcon={<UploadFileIcon />}
+            fullWidth
+            variant="contained"
+            component="label"
+            sx={{ backgroundColor: "#1a237e" }}
+          >
             Select Files
             <input hidden multiple type="file" onChange={handleFileChange} />
           </Button>
@@ -625,7 +639,7 @@ const UploadPage = ({ user }) => {
       {/* History Drawer */}
       <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Box
-          sx={{ width: 300 }}
+          sx={{ width: 280 }}
           role="presentation"
           onClick={() => setDrawerOpen(false)}
           onKeyDown={() => setDrawerOpen(false)}

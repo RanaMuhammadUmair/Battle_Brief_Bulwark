@@ -77,12 +77,12 @@ async def summarize(
             logger.info(f"Extracting text from file {file.filename}...")
             plain_text = parser.from_file(temp_path).get('content').strip()
 
-            # enforce 2 500-word limit
+            # enforce 1500-word limit
             word_count = len(plain_text.split())
-            if word_count > 2500:
+            if word_count > 1500:
                 raise Exception(
-                    "Current system is designed to process maximum 5 pages long report. "
-                    "Please contact administrator to increase the limit"
+                    f"Current system is designed to process maximum 3 pages (1500 words ~ 2000 tokens) long report. Your file contains {word_count} words."
+                    "Please contact administrator to increase the limit."
                 )
 
             logger.info(f"Extracted text length: {len(plain_text)} characters and {word_count} words for file: {file.filename}")

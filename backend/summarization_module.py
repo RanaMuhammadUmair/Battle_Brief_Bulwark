@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 #global cap for all summaries (in tokens)
-MAX_SUMMARY_TOKENS = 1000
+MAX_SUMMARY_TOKENS = 650
 
 def summarize_text(text, model_name):
     # Make sure models are loaded
