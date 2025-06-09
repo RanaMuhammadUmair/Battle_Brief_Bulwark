@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import UploadPage from "./UploadPage.jsx";
 import LoginPage from "./LoginPage.jsx";
 import SignUpPage from "./SignUpPage.jsx";
+import SettingPage from "./SettingPage.jsx";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -35,7 +36,14 @@ function App() {
             </PrivateRoute>
           }
         />
-
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <SettingPage user={user} />
+            </PrivateRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

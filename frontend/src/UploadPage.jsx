@@ -31,6 +31,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from '@mui/icons-material/History';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import SettingsIcon from "@mui/icons-material/Settings";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import {
@@ -263,7 +264,16 @@ const UploadPage = ({ user }) => {
 
       <Box sx={{ display: "flex", flex: 1 }}>
         {/* Sidebar */}
-        <Box sx={{ width: 315, p: 2, borderRight: "1px solid #ccc", backgroundColor: "#fafafa" }}>
+        <Box
+          sx={{
+            width: 315,
+            p: 2,
+            borderRight: "1px solid #ccc",
+            backgroundColor: "#fafafa",
+            display: "flex",            // 🤖 make sidebar a column flex
+            flexDirection: "column"
+          }}
+        >
           <Button
             startIcon={<HistoryIcon />}
             fullWidth
@@ -309,6 +319,17 @@ const UploadPage = ({ user }) => {
               </Typography>
             )}
           </Box>
+
+          <Button
+            startIcon={<SettingsIcon />}
+            fullWidth
+            variant="outlined"
+            color="secondary"
+            sx={{ mt: 'auto' }}         // 🤖 pushes this button to the bottom
+            onClick={() => navigate("/settings")}
+          >
+            Settings
+          </Button>
         </Box>
 
         {/* Main */}
