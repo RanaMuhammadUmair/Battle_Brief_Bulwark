@@ -3,6 +3,18 @@
 @tailwind utilities;
 
 :root {
+  --clr-primary-main:   #556B2F;
+  --clr-primary-light:  #6B8E23;
+  --clr-secondary-main: #8F9779;
+  --clr-bg-default:     #ffffff;
+  --clr-bg-paper:       #ffffff;
+  --clr-text-primary:   #2F4F4F;
+  --clr-text-secondary: #556B2F;
+  --clr-success:        #556B2F;
+  --clr-success-light:  #C5E1A5;
+  --clr-warning:        #FFB74D;
+  --clr-error:          #8B0000;
+  --clr-divider:        #ccc;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -18,7 +30,7 @@ body {
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--clr-bg-default);
 }
 
 #root {
@@ -37,6 +49,8 @@ button {
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 500;
+  background-color: var(--clr-bg-paper);
+  color:            var(--clr-text-primary);
 }
 
 @media (prefers-color-scheme: light) {

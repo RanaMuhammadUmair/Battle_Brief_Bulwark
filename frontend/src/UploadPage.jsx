@@ -225,33 +225,36 @@ const UploadPage = ({ user }) => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          p: 2,
-          borderBottom: "1px solid #ccc",
-          backgroundColor: "#f5f5f5"
-        }}
-      >
-        <Typography variant="h4" sx={{ color: "#1a237e" }}>
-          Nato Intelligence Summarizer
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 0,
+            borderBottom: "1px solid #ccc",
+            backgroundColor: "#f5f5f5"
+          }}
+        >
+          
+          <img
+            src="/logos/header logo1920 x 400.gif"
+            alt="Animated NATO logo with dynamic elements, representing intelligence summarization in a modern digital workspace. The environment is professional and welcoming. The text NATO Intelligence Summarizer is displayed."
+            width={600}
+            left={20}
+          />
 
-        {/* user info + logout */}
+          {/* user info + logout */}
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Typography variant="subtitle1" sx={{ mr: 2, color: "#333" }}>
+          <Typography variant="subtitle1" sx={{ mr: 2, color: theme => theme.palette.text.primary }}>
             {user.username} {user.fullName && `(${user.fullName})`}
           </Typography>
           <Button
+            variant="contained"
+            color="primary"
             onClick={() => {
               localStorage.clear();
               navigate("/login");
             }}
-            sx={{ backgroundColor: "#1a237e" }}
-            variant="contained"
           >
             Logout
           </Button>
@@ -260,22 +263,23 @@ const UploadPage = ({ user }) => {
 
       <Box sx={{ display: "flex", flex: 1 }}>
         {/* Sidebar */}
-        <Box sx={{ width: 290, p: 2, borderRight: "1px solid #ccc", backgroundColor: "#fafafa" }}>
+        <Box sx={{ width: 315, p: 2, borderRight: "1px solid #ccc", backgroundColor: "#fafafa" }}>
           <Button
             startIcon={<HistoryIcon />}
             fullWidth
             variant="contained"
+            color="primary"
             onClick={() => setDrawerOpen(true)}
-            sx={{ mb: 2, backgroundColor: "#1a237e" }}
+            sx={{ mb: 2 }}
           >
             Show History
           </Button>
           <Button
             startIcon={<UploadFileIcon />}
             fullWidth
-            variant="contained"
             component="label"
-            sx={{ backgroundColor: "#1a237e" }}
+            variant="contained"
+            color="primary"
           >
             Select Files
             <input hidden multiple type="file" onChange={handleFileChange} />
@@ -298,7 +302,11 @@ const UploadPage = ({ user }) => {
                 </Box>
               ))
             ) : (
-              <Typography sx={{ color: "#757575" }}>No files selected.</Typography>
+              <Typography
+                sx={theme => ({ color: theme.palette.text.secondary })}
+              >
+                No files selected.
+              </Typography>
             )}
           </Box>
         </Box>
@@ -349,9 +357,12 @@ const UploadPage = ({ user }) => {
 
           <Button
             variant="contained"
+            sx={theme => ({
+              backgroundColor: theme.palette.primary.main,
+              color:           theme.palette.common.white
+            })}
             disabled={loading}
             onClick={handleSummarize}
-            sx={{ backgroundColor: "#1a237e" }}
           >
             {loading ? <CircularProgress color="inherit" size={24} /> : "Summarize"}
           </Button>
@@ -362,8 +373,14 @@ const UploadPage = ({ user }) => {
           <Box sx={{ mt: 4 }}>
             {selectedSummary ? (
               <Box sx={{ mb: 3 }}>
-                <Chip label={`Summary of "${selectedSummary.filename}"`} sx={{ mb: 1, backgroundColor: "#ffb74d" }} />
-                <Chip label={`Model: ${JSON.parse(selectedSummary.metadata).model}`} sx={{ mb: 1, ml: 1, backgroundColor: "#c5e1a5" }} />
+                <Chip
+                  sx={theme => ({ mb: 1, backgroundColor: theme.palette.warning.main })}
+                  label={`Summary of "${selectedSummary.filename}"`}
+                />
+                <Chip
+                  sx={theme => ({ mb: 1, ml: 1, backgroundColor: theme.palette.success.light })}
+                  label={`Model: ${JSON.parse(selectedSummary.metadata).model}`}
+                />
                 <Chip label={new Date(selectedSummary.created_at).toLocaleString()} sx={{ mb: 1, ml: 1, backgroundColor: "#ffb74d" }} />
                 <Card variant="outlined">
                   <CardContent>
@@ -372,14 +389,23 @@ const UploadPage = ({ user }) => {
                 </Card>
                 <Button
                   variant="contained"
-                  sx={{ mt: 1, backgroundColor: "#1a237e" }}
+                  sx={theme => ({
+                    mt: 1,
+                    backgroundColor: theme.palette.primary.main,
+                    color:           theme.palette.common.white
+                  })}
                   onClick={() => { navigator.clipboard.writeText(selectedSummary.summary); }}
                 >
                   Copy
                 </Button>
                 <Button
                   variant="outlined"
-                  sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
+                  sx={theme => ({
+                    mt: 1,
+                    ml: 1,
+                    borderColor: theme.palette.primary.main,
+                    color:       theme.palette.primary.main
+                  })}
                   onClick={() => {
                     const doc = new jsPDF();
                     doc.text(selectedSummary.summary, 10, 10, { maxWidth: 190 });
@@ -519,14 +545,23 @@ const UploadPage = ({ user }) => {
                     </Card>
                     <Button
                       variant="contained"
-                      sx={{ mt: 1, backgroundColor: "#1a237e" }}
+                      sx={theme => ({
+                        mt: 1,
+                        backgroundColor: theme.palette.primary.main,
+                        color:           theme.palette.common.white
+                      })}
                       onClick={() => navigator.clipboard.writeText(s.summary)}
                     >
                       Copy
                     </Button>
                     <Button
                       variant="outlined"
-                      sx={{ mt: 1, ml: 1, borderColor: "#1a237e", color: "#1a237e" }}
+                      sx={theme => ({
+                        mt: 1,
+                        ml: 1,
+                        borderColor: theme.palette.primary.main,
+                        color:       theme.palette.primary.main
+                      })}
                       onClick={() => {
                         const doc = new jsPDF();
                         doc.text(s.summary, 10, 10, { maxWidth: 190 });
@@ -639,7 +674,7 @@ const UploadPage = ({ user }) => {
       {/* History Drawer */}
       <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Box
-          sx={{ width: 280 }}
+          sx={{ width: 295 }}
           role="presentation"
           onClick={() => setDrawerOpen(false)}
           onKeyDown={() => setDrawerOpen(false)}
