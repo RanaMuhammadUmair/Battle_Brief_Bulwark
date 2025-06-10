@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Body, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+from jose import jwt, JWTError
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr
-from users_db import get_user, create_user  # Import the SQLite retrieval and creation functions
+from pydantic import BaseModel, Field, EmailStr
+from users_db import get_user, create_user, update_user, update_user_password  # Import the SQLite retrieval and creation functions
 
 # --- Configuration ---
 SECRET_KEY = "YOUR_SECRET_KEY"  # Replace with a secure key in production
@@ -34,6 +34,24 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 # --- OAuth2 Scheme ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exc = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if not username:
+            raise credentials_exc
+    except JWTError:
+        raise credentials_exc
+    user = get_user(username)
+    if not user:
+        raise credentials_exc
+    return user
+
 # --- Router Setup ---
 router = APIRouter()
 
@@ -43,6 +61,18 @@ class SignUpData(BaseModel):
     full_name: Optional[str] = None
     email: EmailStr
     password: str
+
+# Pydantic model for updating profile data
+class UpdateProfileData(BaseModel):
+    username: str
+    full_name: str | None = None
+    email: EmailStr
+    currentPassword: str = Field(..., alias="currentPassword")
+
+# Pydantic model for changing password
+class ChangePasswordData(BaseModel):
+    currentPassword: str = Field(..., alias="currentPassword")
+    newPassword:     str = Field(..., alias="newPassword")
 
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -66,3 +96,65 @@ async def signup(user_data: SignUpData = Body(...)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"msg": "User created successfully", "username": new_user["username"]}
+
+@router.get("/settings")
+async def read_settings(current_user = Depends(get_current_user)):
+    user = dict(current_user)
+    return {
+        "username":  user["username"],
+        "full_name": user.get("full_name"),
+        "email":     user["email"]
+    }
+
+@router.put("/settings")
+async def update_settings(
+    data: UpdateProfileData,
+    current_user = Depends(get_current_user)
+):
+    # 1) verify their current password
+    if not verify_password(data.currentPassword, current_user["hashed_password"]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect."
+        )
+
+    # 2) write the new fields into the DB
+    updated = update_user(
+        username=current_user["username"],
+        new_username=data.username,
+        full_name=data.full_name,
+        email=data.email
+    )
+
+    # issue a fresh token for the new username
+    from datetime import timedelta
+    access_token = create_access_token(
+        data={"sub": updated["username"]},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    return {
+        "username":     updated["username"],
+        "full_name":    updated.get("full_name"),
+        "email":        updated["email"],
+        "access_token": access_token,
+        "token_type":   "bearer"
+    }
+
+@router.post("/change-password")
+async def change_password(
+    data: ChangePasswordData,
+    current_user = Depends(get_current_user)
+):
+    # 1) verify current password
+    if not verify_password(data.currentPassword, current_user["hashed_password"]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect."
+        )
+
+    # 2) hash & persist the new password
+    new_hashed = pwd_context.hash(data.newPassword)
+    update_user_password(current_user["username"], new_hashed)
+
+    return {"detail": "Password changed successfully."}
