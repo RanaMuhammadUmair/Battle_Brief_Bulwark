@@ -37,6 +37,8 @@ def summarize_text(text, model_name):
         summary = summarize_with_DeepSeek_R1_runpod(text)
     elif model_name == "Llama 3.1":
         summary = summarize_with_llama3_point_1(text)
+    elif model_name == "Grok 3":
+        summary = summarize_with_grok_3(text)
     else:
         return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, T5, or Gemini 2.5 Pro."
     return summary
@@ -285,6 +287,53 @@ def summarize_with_gemini2point5_pro(text):
         if hasattr(e, 'message'):
              error_details = e.message
         return f"Error: Could not generate summary using Gemini API. Details: {error_details}"
+
+
+
+def summarize_with_grok_3(text: str) -> str:
+    """
+    Summarize *text* with xAI’s Grok 3-latest model.
+
+    Args:
+        text (str): The report or document to be summarized.
+    Returns:
+        str: A concise, plain-text summary.
+    """
+
+    grok_client = OpenAI(
+        api_key=os.getenv("XAI_API_KEY"),
+        base_url="https://api.x.ai/v1",
+    )
+
+    try:
+        response = grok_client.chat.completions.create(
+            model="grok-3-latest",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a military intelligence analyst tasked with summarizing reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations. "
+                
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        "Summarize this report and output *only* the summary "
+                        "as plain text:\n\n" + text
+                    ),
+                },
+            ],
+            max_tokens=MAX_SUMMARY_TOKENS,
+            temperature=0.3,
+            stream=False,     
+        )
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        print(f"Grok-3 summarization failed: {type(e).__name__}: {e}")
+        return f"Error: Could not generate Grok-3 summary. {e}"
+
 
 
 

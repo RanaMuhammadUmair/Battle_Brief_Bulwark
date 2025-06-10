@@ -68,7 +68,7 @@ const UploadPage = ({ user }) => {
     { name: "Gemini 2.5 Pro", value: "Gemini 2.5 Pro", logo: "/logos/Cgemini-logo.gif" },
     { name: "DeepSeek-R1", value: "DeepSeek-R1", logo: "/logos/deepseek-logo.gif" },
     { name: "Llama 3.1",  value: "Llama 3.1",  logo: "/logos/meta-logo2.gif" },
-    { name: "xAI",        value: "xAI",        logo: "/logos/xAi-logo.gif" },
+    { name: "Grok 3",        value: "Grok 3",        logo: "/logos/xAi-logo.gif" },
   ];
 
   // File change
