@@ -7,6 +7,7 @@ import torch
 import requests
 import runpod
 import logging
+from mistralai import Mistral
 import google.generativeai as genai
 
 # Configure logger
@@ -19,8 +20,6 @@ load_dotenv()
 MAX_SUMMARY_TOKENS = 650
 
 def summarize_text(text, model_name):
-    # Make sure models are loaded
-    #load_models()
     summary = None  
     # Generate summary using the selected model
     if model_name == "GPT-4.1":
@@ -29,8 +28,8 @@ def summarize_text(text, model_name):
         summary = summarize_with_claude_sonnet_3_7(text)
     elif model_name == "BART":
         summary = summarize_with_bart(text)
-    elif model_name == "Detoxify":
-        summary = summarize_with_t5(text)
+    elif model_name == "Mistral small":
+        summary = summarize_with_mistral_small(text)
     elif model_name == "Gemini 2.5 Pro":
         summary = summarize_with_gemini2point5_pro(text)
     elif model_name == "DeepSeek-R1":
@@ -246,9 +245,6 @@ def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_to
     return final_summary
 
 
-
-def summarize_with_t5(text):
-    return text
     
 def summarize_with_gemini2point5_pro(text):
     """
@@ -335,5 +331,50 @@ def summarize_with_grok_3(text: str) -> str:
         return f"Error: Could not generate Grok-3 summary. {e}"
 
 
+
+
+
+
+def summarize_with_mistral_small(text: str) -> str:
+    """
+    Summarize *text* with Mistral’s `mistral-small` model.
+
+    Args:
+        text (str): Raw report text.
+    Returns:
+        str: Concise plain-text summary.
+    """
+
+    client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
+    if not client:
+        return "Error: Mistral client initialization failed. Please check your API key."
+
+    try:
+        response = client.chat.complete(
+            model="mistral-small-latest",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a military intelligence analyst tasked with summarizing reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations. "
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        "Summarize this report and output only the summary "
+                        "as plain text:\n\n" + text
+                    ),
+                },
+            ],
+            max_tokens=MAX_SUMMARY_TOKENS,
+            temperature=0.3,
+            stream=False,
+        )
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        print(f"Mistral summarization failed: {type(e).__name__}: {e}")
+        return f"Error: Could not generate Mistral summary. {e}"
 
 

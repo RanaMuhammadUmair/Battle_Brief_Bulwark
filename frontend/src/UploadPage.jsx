@@ -52,7 +52,7 @@ const UploadPage = ({ user }) => {
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [manualText, setManualText] = useState("");
-  const [model, setModel] = useState("Detoxify");
+  const [model, setModel] = useState("Mistral small");
   const [summaries, setSummaries] = useState([]);
   const [storedSummaries, setStoredSummaries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +64,7 @@ const UploadPage = ({ user }) => {
     { name: "GPT-4.1",    value: "GPT-4.1",    logo: "/logos/ChatGPT-Logo.gif" },
     { name: "BART",       value: "BART",       logo: "/logos/meta-logo.gif" },
     { name: "CLAUDE",     value: "CLAUDE",     logo: "/logos/anthropic-logo.gif" },
-    { name: "Detoxify",         value: "Detoxify",         logo: "/logos/mistral-logo.gif" },
+    { name: "Mistral small",         value: "Mistral small",         logo: "/logos/mistral-logo.gif" },
     { name: "Gemini 2.5 Pro", value: "Gemini 2.5 Pro", logo: "/logos/Cgemini-logo.gif" },
     { name: "DeepSeek-R1", value: "DeepSeek-R1", logo: "/logos/deepseek-logo.gif" },
     { name: "Llama 3.1",  value: "Llama 3.1",  logo: "/logos/meta-logo2.gif" },
@@ -352,7 +352,7 @@ const UploadPage = ({ user }) => {
                     backgroundColor: model === opt.value ? "primary.light" : "background.paper",
                     // glow on selected
                     boxShadow: model === opt.value
-                      ? "0 10px 20px rgb(0, 131, 237)"
+                      ? "0 10px 20px rgba(196, 255, 3, 0.58)"
                       : "none",
                     transition: "box-shadow 0.2s ease"
                   }}
