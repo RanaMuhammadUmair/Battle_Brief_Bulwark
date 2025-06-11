@@ -362,8 +362,7 @@ def summarize_with_mistral_small(text: str) -> str:
                 {
                     "role": "user",
                     "content": (
-                        "Summarize this report and output only the summary "
-                        "as plain text:\n\n" + text
+                        "Summarize this report and output only summary plain text:\n\n" + text
                     ),
                 },
             ],

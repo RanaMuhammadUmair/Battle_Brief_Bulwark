@@ -11,6 +11,7 @@ from tika import parser
 from auth import router as auth_router
 from users_db import initialize_db
 from detoxify import Detoxify
+from evaluation_module import evaluate_with_mistral_small
 
 # Configure logging
 logging.basicConfig(
@@ -42,7 +43,7 @@ db = Database()
 # Supported file types
 SUPPORTED_FILE_TYPES = [".txt", ".pdf", ".docx"]
 
-# load the unbiased Detoxify model once
+# load models
 detox_model = Detoxify('unbiased')
 
 def handle_uploaded_file(file: UploadFile) -> str:
@@ -89,8 +90,12 @@ async def summarize(
 
             logger.info(f"Generating summary using {model} model for file: {file.filename}...")
             summary = summarize_text(plain_text, model)
-            
-            # run Detoxify on the generated summary
+
+            # new: run Mistral quality judge
+            quality_scores = evaluate_with_mistral_small(plain_text, summary)
+            print(f"Quality scores for {file.filename}: {quality_scores}")
+
+            # run Detoxify as before
             summary_scores = detox_model.predict(summary)
             summary_scores = {label: float(score) for label, score in summary_scores.items()}
 
@@ -98,12 +103,12 @@ async def summarize(
             report_scores = detox_model.predict(plain_text)
             report_scores = {label: float(score) for label, score in report_scores.items()}
 
-            # inject both into metadata
             metadata = {
-              "filename": file.filename,
-              "model": model,
-              "detox_summary": summary_scores,
-              "detox_report": report_scores
+              "filename":       file.filename,
+              "model":          model,
+              "detox_summary":  summary_scores,
+              "detox_report":   report_scores,
+              "quality_scores": quality_scores,     # ← added
             }
             
             db.save_summary(user_id, plain_text, summary, metadata)
