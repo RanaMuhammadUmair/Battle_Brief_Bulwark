@@ -35,3 +35,20 @@ input[type="password"] {
 .error {
     color: red;
 }
+.markdown {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.markdown h1, .markdown h2, .markdown h3 {
+  font-weight: bold;
+}
+
+.markdown ul {
+  list-style-type: disc;
+  margin-left: 20px;
+}
+
+.markdown p {
+  margin: 10px 0;
+}

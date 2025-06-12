@@ -48,6 +48,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import ReactMarkdown from 'react-markdown';
 
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mb
@@ -108,13 +109,14 @@ const UploadPage = ({ user }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      // normalize metadata to an object
+      console.log("Fetched summaries:", data);
       const parsed = (data.summaries || []).map(item => ({
         ...item,
         metadata: typeof item.metadata === "string"
           ? JSON.parse(item.metadata)
           : item.metadata
       }));
+      console.log("Parsed summaries:", parsed);
       setStoredSummaries(parsed);
     } catch (e) {
       console.error("fetchStoredSummaries:", e);
@@ -128,51 +130,66 @@ const UploadPage = ({ user }) => {
   const handleSummarize = async (e) => {
     e.preventDefault();
     setErrorMsg("");
-    setSelectedSummary(null); // Reset previous summary
+    setSelectedSummary(null);
+    setSummaries([]);
     if (!files.length && !manualText.trim()) {
-        alert("Select file or enter text!");
-        return;
+      alert("Select file or enter text!");
+      return;
     }
     const username = localStorage.getItem("username");
     if (!username) return navigate("/login");
 
     setLoading(true);
-    const form = new FormData();
-    files.forEach((f) => form.append("files", f));
-    if (manualText.trim()) {
-        const ts = new Date().toISOString().replace(/[:.]/g, "-");
-        form.append("files", new File([manualText], `clipboard-${ts}.txt`));
-    }
-    form.append("model", model);
-    form.append("user_id", username);
 
-    try {
-        const res = await fetch("http://localhost:8000/summarize", {
-            method: "POST",
-            body: form,
-        });
-        const result = await res.json();
-        const liveSummary = Object.entries(result).find(([_, value]) => typeof value !== "string");
-        if (liveSummary) {
-            const [filename, value] = liveSummary;
-            setSelectedSummary({
-                filename,
-                summary: value.summary,
-                metadata: typeof value.metadata === "string" ? JSON.parse(value.metadata) : value.metadata,
-            });
-        }
-        setSummaries(Object.entries(result).map(([filename, value]) => ({
-            filename,
-            summary: typeof value === "string" ? null : value.summary,
-            metadata: typeof value === "string" ? null : value.metadata,
-            error: typeof value === "string" ? value : null,
-        })));
-    } catch (e) {
-        console.error(e);
-        setErrorMsg("Summarization failed");
-    } finally {
-        setLoading(false);
+    // build a list: first any manualText blob, then the real files
+    const toSubmit = [];
+    if (manualText.trim()) {
+      const ts = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-");
+      const blob = new Blob([manualText], { type: "text/plain" });
+      const txtFile = new File(
+        [blob],
+        `clipboard-${ts}.txt`,
+        { type: "text/plain" }
+      );
+      toSubmit.push(txtFile);
     }
+    toSubmit.push(...files);
+
+    for (const f of toSubmit) {
+      const form = new FormData();
+      form.append("user_id", username);
+      form.append("model", model);
+      form.append("files", f);
+
+      try {
+        const res = await fetch("http://localhost:8000/summarize", {
+          method: "POST",
+          body: form,
+        });
+        const data = await res.json();
+        const [filename, value] = Object.entries(data)[0];
+        const created_at = new Date().toISOString();
+        const item = typeof value === "string"
+          ? { filename, summary: null, metadata: null, error: value, created_at }
+          : {
+              filename,
+              summary: value.summary,
+              metadata: typeof value.metadata === "string"
+                ? JSON.parse(value.metadata)
+                : value.metadata,
+              error: null,
+              created_at,
+            };
+      setSummaries((prev) => [...prev, item]);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    setLoading(false);
+    fetchStoredSummaries();
   };
 
   const handleDelete = async (id) => {
@@ -185,6 +202,7 @@ const UploadPage = ({ user }) => {
   };
 
   const renderHistory = () => {
+    console.log("Rendering history with summaries:", storedSummaries); // Debugging log
     const sorted = [...storedSummaries].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
@@ -236,6 +254,9 @@ const UploadPage = ({ user }) => {
       </Box>
     );
   };
+
+  // decide which list to draw: either the clicked history item or live summaries
+  const displayList = selectedSummary ? [selectedSummary] : summaries;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -392,259 +413,195 @@ const UploadPage = ({ user }) => {
           {/* Summarize Button */}
           <Button
             variant="contained"
-            sx={theme => ({
-                backgroundColor: theme.palette.primary.main,
-                color: theme.palette.common.white,
-            })}
             disabled={loading}
             onClick={handleSummarize}
           >
-            {loading ? (
-                <CircularProgress size={24} sx={{ color: theme => theme.palette.common.white }} />
-            ) : (
-                "Summarize"
-            )}
+            {loading
+              ? <CircularProgress size={24} sx={{ color: t=>t.palette.common.white }} />
+              : "Summarize"
+            }
           </Button>
 
-          {errorMsg && <Alert severity="error" sx={{ mt: 3 }}>{errorMsg}</Alert>}
+          {/* === new: display ALL live summaries with full detail === */}
+          {displayList.length > 0 && (
+            <Box sx={{ mt: 4 }}>
+              {displayList.map(item => (
+                <Box key={item.filename} sx={{ mb: 5, p: 2, border: 1, borderColor: "grey.300", borderRadius: 1 }}>
+                  {/* Header chips */}
+                  <Chip
+                    label={`Summary of "${item.filename}"`}
+                    sx={{ mb: 1, backgroundColor: theme => theme.palette.warning.main }}
+                  />
+                  <Chip
+                    label={`Model: ${item.metadata?.model}`}
+                    sx={{ mb: 1, ml: 1, backgroundColor: theme => theme.palette.success.light }}
+                  />
+                  <Chip
+                    label={new Date(item.created_at).toLocaleString()}
+                    sx={{ mb: 1, ml: 1, backgroundColor: "#ffb74d" }}
+                  />
 
-          {/* Display live or selected summary */}
-          <Box sx={{ mt: 4 }}>
-            {selectedSummary ? (
-                <Box sx={{ mb: 3 }}>
-                    {/* Summary Details */}
-                    <Chip
-                        sx={theme => ({ mb: 1, backgroundColor: theme.palette.warning.main })}
-                        label={`Summary of "${selectedSummary.filename}"`}
-                    />
-                    <Chip
-                        sx={theme => ({ mb: 1, ml: 1, backgroundColor: theme.palette.success.light })}
-                        label={`Model: ${selectedSummary.metadata.model}`}
-                    />
-                    <Chip label={new Date(selectedSummary.created_at).toLocaleString()} sx={{ mb: 1, ml: 1, backgroundColor: "#ffb74d" }} />
-                    <Card variant="outlined">
-                        <CardContent>
-                            <Typography sx={{ whiteSpace: "pre-wrap" }}>{selectedSummary.summary}</Typography>
-                        </CardContent>
-                    </Card>
-                    <Button
-                        variant="contained"
-                        sx={theme => ({
-                            mt: 1,
-                            backgroundColor: theme.palette.primary.main,
-                            color: theme.palette.common.white,
-                        })}
-                        onClick={() => navigator.clipboard.writeText(selectedSummary.summary)}
-                    >
-                        Copy
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        sx={theme => ({
-                            mt: 1,
-                            ml: 1,
-                            borderColor: theme.palette.primary.main,
-                            color: theme.palette.primary.main,
-                        })}
-                        onClick={() => {
-                            const doc = new jsPDF();
-                            doc.text(selectedSummary.summary, 10, 10, { maxWidth: 190 });
-                            doc.save(`${selectedSummary.filename}.pdf`);
-                        }}
-                    >
-                        Download PDF
-                    </Button>
+                  {/* Summary text */}
+                  <Card variant="outlined" sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Typography>
+                        {item.summary || <Alert severity="error">{item.error}</Alert>}
+                      </Typography>
+                    </CardContent>
+                  </Card>
 
-                    {/* Quality Score Table */}
-                    <Typography variant="h6" sx={{ mt: 4 }}>Quality Scores</Typography>
-                    <Box sx={{ display: "flex", alignItems: "flex-start", mt: 2 }}>
-                        {/* Quality Scores Table */}
+                  {/* Copy & PDF */}
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => navigator.clipboard.writeText(item.summary || "")}
+                    sx={{ mr: 1 }}
+                  >
+                    Copy
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      const doc = new jsPDF();
+                      doc.text(item.summary || "", 10, 10, { maxWidth: 190 });
+                      doc.save(`${item.filename}.pdf`);
+                    }}
+                  >
+                    Download PDF
+                  </Button>
+
+                  {/* only show all the detail tables/charts if metadata is present */}
+                  {item.metadata && (
+                    <>
+                      {/* Quality Scores */}
+                      <Typography variant="h6" sx={{ mt: 4 }}>Quality Scores</Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", mt: 2 }}>
                         <TableContainer component={Paper} sx={{ flex: 2, maxWidth: "70%", mr: 2 }}>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Criteria</TableCell>
-                                        <TableCell align="right">Score</TableCell>
-                                        <TableCell>Justification</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {Object.entries(selectedSummary.metadata.quality_scores || {}).map(([criteria, details]) => (
-                                        <TableRow key={criteria}>
-                                            <TableCell>{criteria}</TableCell>
-                                            <TableCell align="right">{details.score}</TableCell>
-                                            <TableCell>{details.justification}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-
-                        {/* Infographic Section */}
-                        <Box sx={{ flex: 1, maxWidth: "30%" }}>
-                          <Typography variant="subtitle1" sx={{ mb: 2 }}>Quality Scores Breakdown</Typography>
-                          <ResponsiveContainer width="100%" height={300}>
-                              <PieChart>
-                                  <Pie
-                                      data={Object.entries(selectedSummary.metadata.quality_scores || {}).map(([criteria, details]) => ({
-                                          name: criteria,
-                                          value: details.score,
-                                      }))}
-                                      dataKey="value"
-                                      nameKey="name"
-                                      cx="50%"
-                                      cy="50%"
-                                      outerRadius={120}
-                                      fill="#8884d8"
-                                      label
-                                  >
-                                      {Object.entries(selectedSummary.metadata.quality_scores || {}).map(([criteria], index) => (
-                                          <Cell
-                                              key={`cell-${index}`}
-                                              fill={
-                                                  index === 0
-                                                      ? "#ffb74d" // Orange (used in chips)
-                                                      : index === 1
-                                                      ? "#82ca9d" // Green (used in success chips)
-                                                      : index === 2
-                                                      ? "#8884d8" // Purple (used in buttons)
-                                                      : index === 3
-                                                      ? "#ffc658" // Yellow (used in warnings)
-                                                      : "#d0ed57" // Light green (fallback)
-                                              }
-                                          />
-                                      ))}
-                                  </Pie>
-                                  <Tooltip />
-                              </PieChart>
-                          </ResponsiveContainer>
-                        </Box>
-                    </Box>
-
-  
-                    {/* Ethical Considerations Table */}
-                    <Typography variant="h6" sx={{ mt: 4 }}>Ethical Considerations</Typography>
-                    <TableContainer component={Paper} sx={{ mt: 2 }}>
-                        <Table>
+                          <Table size="small">
                             <TableHead>
-                                <TableRow>
-                                    <TableCell>Category</TableCell>
-                                    <TableCell>Report Text (%)</TableCell>
-                                    <TableCell>Summary (%)</TableCell>
-                                    <TableCell>Difference (%)</TableCell>
-                                </TableRow>
+                              <TableRow>
+                                <TableCell>Criteria</TableCell>
+                                <TableCell align="right">Score</TableCell>
+                                <TableCell>Justification</TableCell>
+                              </TableRow>
                             </TableHead>
                             <TableBody>
-                                {Object.keys(selectedSummary.metadata.detox_report || {}).map((category) => {
-                                    const formattedCategory = category
-                                        .replace(/_/g, " ") // Replace underscores with spaces
-                                        .replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize first letter of each word
-                                    const reportScore = (selectedSummary.metadata.detox_report[category] || 0) * 100;
-                                    const summaryScore = (selectedSummary.metadata.detox_summary[category] || 0) * 100;
-                                    const difference = (summaryScore - reportScore).toFixed(2);
-                                    return (
-                                        <TableRow key={category}>
-                                            <TableCell>{formattedCategory}</TableCell>
-                                            <TableCell>{reportScore.toFixed(2)}</TableCell>
-                                            <TableCell>{summaryScore.toFixed(2)}</TableCell>
-                                            <TableCell sx={{ color: difference <= 0 ? "green" : "red" }}>
-                                                {difference}
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                                {/* Overall Row */}
-                                <TableRow>
-                                    <TableCell><strong>Overall</strong></TableCell>
-                                    <TableCell>
-                                        {(
-                                            Object.values(selectedSummary.metadata.detox_report || {}).reduce((acc, val) => acc + val, 0) /
-                                            Object.keys(selectedSummary.metadata.detox_report || {}).length * 100
-                                        ).toFixed(2)}
-                                    </TableCell>
-                                    <TableCell>
-                                        {(
-                                            Object.values(selectedSummary.metadata.detox_summary || {}).reduce((acc, val) => acc + val, 0) /
-                                            Object.keys(selectedSummary.metadata.detox_summary || {}).length * 100
-                                        ).toFixed(2)}
-                                    </TableCell>
-                                    <TableCell sx={{
-                                        color: (
-                                            Object.keys(selectedSummary.metadata.detox_report || {}).reduce((acc, category) => {
-                                                const reportScore = selectedSummary.metadata.detox_report[category] || 0;
-                                                const summaryScore = selectedSummary.metadata.detox_summary[category] || 0;
-                                                return acc + (summaryScore - reportScore);
-                                            }, 0) /
-                                            Object.keys(selectedSummary.metadata.detox_report || {}).length * 100
-                                        ) <= 0 ? "green" : "red"
-                                    }}>
-                                        {(
-                                            Object.keys(selectedSummary.metadata.detox_report || {}).reduce((acc, category) => {
-                                                const reportScore = selectedSummary.metadata.detox_report[category] || 0;
-                                                const summaryScore = selectedSummary.metadata.detox_summary[category] || 0;
-                                                return acc + (summaryScore - reportScore);
-                                            }, 0) /
-                                            Object.keys(selectedSummary.metadata.detox_report || {}).length * 100
-                                        ).toFixed(2)}
-                                    </TableCell>
+                              {Object.entries(item.metadata.quality_scores).map(([c,d]) => (
+                                <TableRow key={c}>
+                                  <TableCell>{c}</TableCell>
+                                  <TableCell align="right">{d.score}</TableCell>
+                                  <TableCell>{d.justification}</TableCell>
                                 </TableRow>
+                              ))}
                             </TableBody>
+                          </Table>
+                        </TableContainer>
+                        <Box sx={{ flex: 1, maxWidth: "30%" }}>
+                          {/* Pie chart */}
+                          <ResponsiveContainer width="100%" height={250}>
+                            <PieChart>
+                              <Pie
+                                data={Object.entries(item.metadata.quality_scores || {}).map(([name, det]) => ({ name, value: det.score }))
+                                }
+                                dataKey="value"
+                                nameKey="name"
+                                outerRadius={90}
+                                label
+                              >
+                                {Object.entries(item.metadata.quality_scores || {}).map((_, i) => (
+                                  <Cell key={i} fill={["#ffb74d","#82ca9d","#8884d8","#ffc658","#d0ed57"][i%5]} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </Box>
+                      </Box>
+
+                      {/* Ethical Considerations */}
+                      <Typography variant="h6" sx={{ mt: 4 }}>Ethical Considerations</Typography>
+                      <TableContainer component={Paper} sx={{ mt: 2 }}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Category</TableCell>
+                              <TableCell>Report (%)</TableCell>
+                              <TableCell>Summary (%)</TableCell>
+                              <TableCell>Difference</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {Object.keys(item.metadata.detox_report).map(cat => {
+                              const rep = (item.metadata.detox_report[cat] || 0) * 100;
+                              const sum = (item.metadata.detox_summary[cat] || 0) * 100;
+                              const diff = (sum - rep).toFixed(2);
+                              return (
+                                <TableRow key={cat}>
+                                  <TableCell>{cat.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase())}</TableCell>
+                                  <TableCell>{rep.toFixed(2)}</TableCell>
+                                  <TableCell>{sum.toFixed(2)}</TableCell>
+                                  <TableCell sx={{ color: diff<=0?"green":"red" }}>{diff}</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                            {/* Overall row */}
+                            <TableRow>
+                              <TableCell><strong>Overall</strong></TableCell>
+                              <TableCell>
+                                {(
+                                  Object.values(item.metadata.detox_report||{}).reduce((a,v)=>a+v,0) / 
+                                  Object.keys(item.metadata.detox_report||{}).length * 100
+                                ).toFixed(2)}
+                              </TableCell>
+                              <TableCell>
+                                {(
+                                  Object.values(item.metadata.detox_summary||{}).reduce((a,v)=>a+v,0) / 
+                                  Object.keys(item.metadata.detox_summary||{}).length * 100
+                                ).toFixed(2)}
+                              </TableCell>
+                              <TableCell sx={{
+                                color: (
+                                  Object.keys(item.metadata.detox_report||{}).reduce((acc,cat) => {
+                                    return acc + ((item.metadata.detox_summary[cat]||0) - (item.metadata.detox_report[cat]||0));
+                                  },0) / Object.keys(item.metadata.detox_report||{}).length * 100
+                                ) <= 0 ? "green":"red"
+                              }}>
+                                {(
+                                  Object.keys(item.metadata.detox_report||{}).reduce((acc,cat) => {
+                                    return acc + ((item.metadata.detox_summary[cat]||0) - (item.metadata.detox_report[cat]||0));
+                                  },0) / Object.keys(item.metadata.detox_report||{}).length * 100
+                                ).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
                         </Table>
-                    </TableContainer>
+                      </TableContainer>
 
-                    {/* Explanation */}
-                    <Box sx={{ mt: 2 }}>
-                        {(() => {
-                            const overallDifference = (
-                                Object.keys(selectedSummary.metadata.detox_report || {}).reduce((acc, category) => {
-                                    const reportScore = selectedSummary.metadata.detox_report[category] || 0;
-                                    const summaryScore = selectedSummary.metadata.detox_summary[category] || 0;
-                                    return acc + (summaryScore - reportScore);
-                                }, 0) /
-                                Object.keys(selectedSummary.metadata.detox_report || {}).length * 100
-                            ).toFixed(2);
-
-                            if (overallDifference <= 0) {
-                                return (
-                                    <Typography sx={{ color: "green" }}>
-                                        Generated summary has {Math.abs(overallDifference)}% less toxic content compared to the original provided report.
-                                    </Typography>
-                                );
-                            } else {
-                                return (
-                                    <Typography sx={{ color: "red" }}>
-                                        Generated summary contains more toxic content than the original text. Summary needs human review.
-                                    </Typography>
-                                );
-                            }
-                        })()}
-                    </Box>
-
-                    {/* Toxicity Comparison Chart */}
-                    <Typography variant="h6" sx={{ mt: 4 }}>Toxicity Comparison</Typography>
-                    <ResponsiveContainer width="100%" height={300} sx={{ mt: 2 }}>
+                      {/* Toxicity Comparison */}
+                      <Typography variant="h6" sx={{ mt: 4 }}>Toxicity Comparison</Typography>
+                      <ResponsiveContainer width="100%" height={250} sx={{ mt: 2 }}>
                         <BarChart
-                            data={Object.keys(selectedSummary.metadata.detox_report || {}).map((category) => ({
-                                aspect: category
-                                    .replace(/_/g, " ") // Replace underscores with spaces
-                                    .replace(/\b\w/g, (char) => char.toUpperCase()), // Capitalize first letter of each word
-                                report: (selectedSummary.metadata.detox_report[category] * 100).toFixed(2), // Convert to percentage
-                                summary: (selectedSummary.metadata.detox_summary[category] * 100).toFixed(2), // Convert to percentage
-                            }))}
+                          data={Object.keys(item.metadata.detox_report||{}).map(cat => ({
+                            aspect: cat.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase()),
+                            report: +(item.metadata.detox_report[cat]*100).toFixed(2),
+                            summary: +(item.metadata.detox_summary[cat]*100).toFixed(2)
+                          }))}
                         >
-                            <XAxis dataKey="aspect" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="report" fill="#8884d8" name="Report Text" />
-                            <Bar dataKey="summary" fill="#82ca9d" name="Summary Text" />
+                          <XAxis dataKey="aspect" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="report" fill="#8884d8" name="Report" />
+                          <Bar dataKey="summary" fill="#82ca9d" name="Summary" />
                         </BarChart>
-                    </ResponsiveContainer>
+                      </ResponsiveContainer>
+                    </>
+                  )}
                 </Box>
-            ) : (
-                <Typography>No live summary available.</Typography>
-            )}
-          </Box>
+              ))}
+            </Box>
+          )}
         </Paper>
       </Box>
 

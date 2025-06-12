@@ -19,7 +19,8 @@ class Database:
             plain_text TEXT,
             summary TEXT,
             metadata TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            -- use localtime here instead of UTC
+            created_at TIMESTAMP DEFAULT (datetime('now','localtime'))
         );
         """
         self.conn.execute(query)
@@ -31,7 +32,8 @@ class Database:
         VALUES (?, ?, ?, ?, ?)
         """
         metadata_json = json.dumps(metadata)
-        self.conn.execute(query, (user_id, metadata.get("filename"), plain_text, summary, metadata_json))
+        filename = metadata.get("filename", "Unknown Filename")  # Fallback for missing filename
+        self.conn.execute(query, (user_id, filename, plain_text, summary, metadata_json))
         self.conn.commit()
         
         # Retain only the last 100 summaries for this user
