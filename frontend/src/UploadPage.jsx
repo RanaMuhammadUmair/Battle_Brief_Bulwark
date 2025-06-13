@@ -28,12 +28,22 @@ import {
   TableRow,
   Grid,
   LinearProgress,
-  Autocomplete
+  Autocomplete,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Avatar,
+  Menu,
+  ListItemIcon,
+  Tooltip as MuiTooltip,   // avoid name clash
+  Stack
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import HistoryIcon from '@mui/icons-material/History';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
+import HistoryIcon from "@mui/icons-material/History";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SettingsIcon from "@mui/icons-material/Settings";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import {
@@ -43,13 +53,13 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   PieChart,
   Pie,
   Cell
-} from 'recharts';
-import ReactMarkdown from 'react-markdown';
+} from "recharts";
+import ReactMarkdown from "react-markdown";
 
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mb
@@ -66,6 +76,7 @@ const UploadPage = ({ user }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedSummary, setSelectedSummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState(""); // New state for search term
+  const [userMenuAnchor, setUserMenuAnchor] = useState(null);
 
   // Ranking state
   const [rankingCriterion, setRankingCriterion] = useState("overall");
@@ -294,7 +305,7 @@ const UploadPage = ({ user }) => {
                         <small>{new Date(item.created_at).toLocaleString()}</small><br/>
                         <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
                           {logoSrc && (
-                            <img src={logoSrc} alt={item.metadata.model} width={20} height={20} style={{ marginRight: 6 }} />
+                            <img src={logoSrc} alt={item.metadata.model} width={30} height={20} style={{ marginRight: 6 }} />
                           )}
                           <span>{item.metadata.model}</span>
                         </Box>
@@ -319,6 +330,13 @@ const UploadPage = ({ user }) => {
     item
   }));
 
+  const handleUserMenuOpen = (e) => setUserMenuAnchor(e.currentTarget);
+  const handleUserMenuClose = () => setUserMenuAnchor(null);
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Box
@@ -338,7 +356,7 @@ const UploadPage = ({ user }) => {
           left={20}
         />
 
-        {/* ← replace TextField with Autocomplete */}
+        {/* ← your existing Autocomplete */}
         <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
           <Autocomplete
             freeSolo
@@ -373,20 +391,37 @@ const UploadPage = ({ user }) => {
           />
         </Box>
 
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Typography variant="subtitle1" sx={{ mr: 2, color: theme => theme.palette.text.primary }}>
-            {user.username} {user.fullName && `(${user.fullName})`}
-          </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", pr: 4, gap: 2 }}>
           <Button
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              localStorage.clear();
-              navigate("/login");
-            }}
+            onClick={handleUserMenuOpen}
+            endIcon={<ExpandMoreIcon />}
+            sx={{ textTransform: "none" }}
           >
-            Logout
+            <Avatar sx={{ width: 32, height: 32, mr: 1 }}>
+              {user.username[0].toUpperCase()}
+            </Avatar>
+            {user.username}
           </Button>
+
+          <Menu
+            anchorEl={userMenuAnchor}
+            open={Boolean(userMenuAnchor)}
+            onClose={handleUserMenuClose}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem
+              onClick={() => {
+                handleUserMenuClose();
+                handleLogout();
+              }}
+            >
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              Logout
+            </MenuItem>
+          </Menu>
         </Box>
       </Box>
 
@@ -448,78 +483,123 @@ const UploadPage = ({ user }) => {
             )}
           </Box>
 
-          {/* Model Ranking Section */}
           <Divider sx={{ my: 2 }} />
+          <Card sx={{ mb:2, p:2, backgroundColor:'background.paper' }}>
+            <Box sx={{ display:'flex', alignItems:'center', mb:2 }}>
+              <SettingsIcon fontSize="small" sx={{ mr:1, color:'primary.main' }}/>
+              <Typography variant="h6" sx={{ fontWeight:'medium' }}>
+                Model Performance
+              </Typography>
+            </Box>
 
-          <Typography variant="subtitle1">
-            Model Ranking based on Historic summaries quality
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            Total Summaries: {storedSummaries.length}
-          </Typography>
+            <Typography variant="body2" sx={{ mb:2, display:'flex', alignItems:'baseline' }}>
+              Total Summaries:&nbsp;
+              <Typography component="span" variant="h6" sx={{ fontWeight:'bold', ml:.5 }}>
+                {storedSummaries.length}
+              </Typography>
+            </Typography>
+            <FormControl fullWidth size="small" sx={{ mb:3 }}>
+              <InputLabel>Sort by</InputLabel>
+              <Select
+                value={rankingCriterion}
+                label="Sort by"
+                onChange={e => setRankingCriterion(e.target.value)}
+              >
+                <MenuItem value="overall">Overall</MenuItem>
+                <MenuItem value="consistency">Consistency</MenuItem>
+                <MenuItem value="coverage">Coverage</MenuItem>
+                <MenuItem value="coherence">Coherence</MenuItem>
+                <MenuItem value="fluency">Fluency</MenuItem>
+              </Select>
+            </FormControl>
+          </Card>
 
-          <FormControl fullWidth size="small" sx={{ mb: 1 }}>
-            <InputLabel>Sort by</InputLabel>
-            <Select
-              value={rankingCriterion}
-              label="Sort by"
-              onChange={e => setRankingCriterion(e.target.value)}
-            >
-              <MenuItem value="overall">Overall</MenuItem>
-              <MenuItem value="consistency">Consistency</MenuItem>
-              <MenuItem value="coverage">Coverage</MenuItem>
-              <MenuItem value="coherence">Coherence</MenuItem>
-              <MenuItem value="fluency">Fluency</MenuItem>
-            </Select>
-          </FormControl>
+          {modelStats
+            .sort((a,b) => b.averages[rankingCriterion] - a.averages[rankingCriterion])
+            .map(ms => {
+              const opt = modelOptions.find(o => o.value===ms.model);
+              const logoSrc = opt?.logo.replace('.gif','.png')||"";
+              const avg = (ms.averages[rankingCriterion] || 0).toFixed(2)
+              const pct = (ms.averages[rankingCriterion] || 0) / 10 * 100;
 
-          <List dense sx={{ flexGrow: 1 }}>
-            {modelStats
-              .sort((a, b) => b.averages[rankingCriterion] - a.averages[rankingCriterion])
-              .map(ms => {
-                const opt = modelOptions.find(o => o.value === ms.model);
-                const logoSrc = opt?.logo.replace('.gif', '.gif') || '';     // use the logo png vs gif
-                const pct = storedSummaries.length
-                  ? (ms.count / storedSummaries.length) * 100
-                  : 0;
-                return (
-                  <ListItem
-                    key={ms.model}
-                    sx={{
-                      // stack vertically, but left-align all children
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      // remove default ListItem padding so img & bar start at edge
-                      px: 0,
-                      py: 1
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                      {logoSrc && (
-                        <img
-                          src={logoSrc}
-                          alt={ms.model}
-                          width={64}
-                          height={24}
-                          style={{ marginRight: 1 }}
-                        />
-                      )}
-                      <ListItemText
-                        primary={`${ms.model} (${ms.count})`}
-                        secondary={`Avg ${rankingCriterion}: ${(ms.averages[rankingCriterion] || 0).toFixed(2)}`}
-                        sx={{ ml: 0 }}
+              return (
+                <Accordion key={ms.model} sx={{ mb: 2 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: '84px 1fr',
+                        rowGap: 0.1,
+                        alignItems: 'start',
+                        width: '100%'
+                      }}
+                    >
+                      {/* single avatar spans all three rows */}
+                      <Avatar
+                        variant="square"
+                        fullWidth
+                        src={logoSrc}
+                        alt={ms.model}
+                        sx={{ gridRow: '1 / 4', width: 70, height: 50, borderRadius: 1 }}
                       />
-                    </Box>
-                    <Box sx={{ width: '100%', mt: 1 }}>
-                      <LinearProgress variant="determinate" value={pct} sx={{ height: 8, borderRadius: 4 }} />
-                      <Typography variant="caption" sx={{ ml: 0, mt: .5 }}>
-                        {pct.toFixed(0)}% of total
+
+                      {/* Row 1: Model name */}
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 'bold', textTransform: 'uppercase' }}
+                      >
+                        {ms.model}
                       </Typography>
+
+                      {/* Row 2: count : criterion : score */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
+                        <Typography
+                          component="span"
+                          variant="h5"
+                          sx={{ fontWeight: 'bold', mr: 1, lineHeight: 1 }}
+                        >
+                          {ms.count}
+                        </Typography>
+                        <Typography component="span" variant="body2" textTransform="capitalize">
+                          {rankingCriterion}: {avg}
+                        </Typography>
+                      </Box>
+
+                      {/* Row 3: progress bar */}
+                      <Box sx={{ width: '100%' }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={pct}
+                          sx={{ height: 6, borderRadius: 3 }}
+                        />
+                      </Box>
                     </Box>
-                  </ListItem>
-                );
-              })}
-          </List>
+                  </AccordionSummary>
+
+                  <AccordionDetails>
+                    {["overall","consistency","coverage","coherence","fluency"].map(crit => {
+                      const score = (ms.averages[crit]||0).toFixed(2);
+                      const bar = (ms.averages[crit]||0)/10*100;
+                      return (
+                        <Box key={crit} sx={{ display:"flex", alignItems:"center", mb:1 }}>
+                          <Typography sx={{ width:90, textTransform:"capitalize" }}>
+                            {crit}
+                          </Typography>
+                          <LinearProgress
+                            variant="determinate"
+                            value={bar}
+                            sx={{ flexGrow:1, mx:1, height:6, borderRadius:3 }}
+                          />
+                          <Typography variant="body2" sx={{ width:40, textAlign:"right" }}>
+                            {score}/10
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </AccordionDetails>
+                </Accordion>
+              );
+            })}
           {/* ===== end Model Ranking Section ====== */}
 
           <Button
@@ -705,18 +785,23 @@ const UploadPage = ({ user }) => {
                           <ResponsiveContainer width="100%" height={250}>
                             <PieChart>
                               <Pie
-                                data={Object.entries(item.metadata.quality_scores || {}).map(([name, det]) => ({ name, value: det.score }))
-                                }
+                                data={Object.entries(item.metadata.quality_scores || {}).map(([name, det]) => ({
+                                  name,
+                                  value: det.score
+                                }))}
                                 dataKey="value"
                                 nameKey="name"
                                 outerRadius={90}
                                 label
                               >
                                 {Object.entries(item.metadata.quality_scores || {}).map((_, i) => (
-                                  <Cell key={i} fill={["#ffb74d","#82ca9d","#8884d8","#ffc658","#d0ed57"][i%5]} />
+                                  <Cell
+                                    key={i}
+                                    fill={["#ffb74d", "#82ca9d", "#8884d8", "#ffc658", "#d0ed57"][i % 5]}
+                                  />
                                 ))}
                               </Pie>
-                              <Tooltip />
+                              <RechartsTooltip />
                             </PieChart>
                           </ResponsiveContainer>
                         </Box>
@@ -793,7 +878,7 @@ const UploadPage = ({ user }) => {
                         >
                           <XAxis dataKey="aspect" />
                           <YAxis />
-                          <Tooltip />
+                          <RechartsTooltip />
                           <Legend />
                           <Bar dataKey="report" fill="#8884d8" name="Report" />
                           <Bar dataKey="summary" fill="#82ca9d" name="Summary" />
