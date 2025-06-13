@@ -65,6 +65,10 @@ const UploadPage = ({ user }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedSummary, setSelectedSummary] = useState(null);
 
+  // Ranking state
+  const [rankingCriterion, setRankingCriterion] = useState("overall");
+  const [modelStats, setModelStats] = useState([]);
+
   const modelOptions = [
     { name: "GPT-4.1",    value: "GPT-4.1",    logo: "/logos/ChatGPT-Logo.gif" },
     { name: "BART",       value: "BART",       logo: "/logos/meta-logo.gif" },
@@ -126,6 +130,44 @@ const UploadPage = ({ user }) => {
   useEffect(() => {
     fetchStoredSummaries();
   }, []);
+
+  // Recompute model stats whenever storedSummaries changes
+  useEffect(() => {
+    const stats = {};
+
+    storedSummaries.forEach(item => {
+      const modelName = item.metadata?.model || "Unknown";
+      const scores = item.metadata?.quality_scores;
+      if (!scores) return;
+
+      if (!stats[modelName]) {
+        stats[modelName] = { count: 0, sums: {} };
+      }
+      stats[modelName].count++;
+
+      Object.entries(scores).forEach(([crit, det]) => {
+        // normalize key to lowercase
+        const key = crit.toLowerCase();
+        const score = det?.score ?? 0;
+        stats[modelName].sums[key] = (stats[modelName].sums[key] || 0) + score;
+      });
+    });
+
+    const arr = Object.entries(stats).map(([model, { count, sums }]) => {
+      const averages = {};
+      // average = sum of scores ÷ number of summaries
+      Object.entries(sums).forEach(([crit, totalScore]) => {
+        averages[crit] = totalScore / count;
+      });
+      // ensure all five criteria exist
+      ["consistency","coverage","coherence","fluency","overall"].forEach(c => {
+        if (!(c in averages)) averages[c] = 0;
+      });
+      return { model, count, averages };
+    });
+
+    setModelStats(arr);
+  }, [storedSummaries]);
 
   const handleSummarize = async (e) => {
     e.preventDefault();
@@ -354,12 +396,65 @@ const UploadPage = ({ user }) => {
             )}
           </Box>
 
+          {/* Model Ranking Section */}
+          <Divider sx={{ my: 2 }} />
+
+          <Typography variant="subtitle1">
+            Model Ranking based on Historic summaries quality
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Total Summaries: {storedSummaries.length}
+          </Typography>
+
+          <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+            <InputLabel>Sort by</InputLabel>
+            <Select
+              value={rankingCriterion}
+              label="Sort by"
+              onChange={e => setRankingCriterion(e.target.value)}
+            >
+              <MenuItem value="overall">Overall</MenuItem>
+              <MenuItem value="consistency">Consistency</MenuItem>
+              <MenuItem value="coverage">Coverage</MenuItem>
+              <MenuItem value="coherence">Coherence</MenuItem>
+              <MenuItem value="fluency">Fluency</MenuItem>
+            </Select>
+          </FormControl>
+
+          <List dense sx={{ flexGrow: 1 }}>
+            {modelStats
+              .sort((a, b) => b.averages[rankingCriterion] - a.averages[rankingCriterion])
+              .map(ms => {
+                const pct = storedSummaries.length
+                  ? (ms.count / storedSummaries.length) * 100
+                  : 0;
+                return (
+                  <ListItem
+                    key={ms.model}
+                    sx={{ flexDirection: "column", alignItems: "flex-start" }}
+                  >
+                    <ListItemText
+                      primary={`${ms.model} (${ms.count})`}
+                      secondary={`Avg ${rankingCriterion}: ${(ms.averages[rankingCriterion] || 0).toFixed(2)}`}
+                    />
+                    <Box sx={{ width: "100%", mt: 1 }}>
+                      <LinearProgress variant="determinate" value={pct} />
+                      <Typography variant="caption" sx={{ ml: 1 }}>
+                        {pct.toFixed(0)}% of total
+                      </Typography>
+                    </Box>
+                  </ListItem>
+                );
+              })}
+          </List>
+          {/* ===== end Model Ranking Section ====== */}
+
           <Button
             startIcon={<SettingsIcon />}
             fullWidth
             variant="outlined"
             color="secondary"
-            sx={{ mt: 'auto' }}     // you can leave this JS‐style comment here
+            sx={{ mt: 'auto' }}
             onClick={() => navigate("/settings")}
           >
             Settings
