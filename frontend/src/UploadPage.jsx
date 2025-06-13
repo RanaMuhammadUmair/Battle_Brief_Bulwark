@@ -27,7 +27,8 @@ import {
   TableHead,
   TableRow,
   Grid,
-  LinearProgress
+  LinearProgress,
+  Autocomplete
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from '@mui/icons-material/History';
@@ -64,6 +65,7 @@ const UploadPage = ({ user }) => {
   const [errorMsg, setErrorMsg] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedSummary, setSelectedSummary] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(""); // New state for search term
 
   // Ranking state
   const [rankingCriterion, setRankingCriterion] = useState("overall");
@@ -244,19 +246,22 @@ const UploadPage = ({ user }) => {
   };
 
   const renderHistory = () => {
+    // always show full history, newest first
     const sorted = [...storedSummaries].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
+
     return (
       <Box sx={{ width: 300, p: 2 }}>
         <Typography variant="h6">Summary History</Typography>
         <Divider sx={{ mb: 2 }} />
+
         {sorted.length === 0 ? (
-          <Typography>No summaries.</Typography>
+          <Typography>No summaries available.</Typography>
         ) : (
           <List>
-            {sorted.map((item) => {
-              // find logo for this model, swap .gif → .png
+            {sorted.map(item => {
+              // find logo, etc—exactly as before
               const opt = modelOptions.find(o => o.value === item.metadata?.model);
               const logoSrc = opt?.logo.replace('.gif', '.png') || "";
 
@@ -272,7 +277,7 @@ const UploadPage = ({ user }) => {
                     <IconButton
                       edge="end"
                       color="error"
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
                         handleDelete(item.id);
                       }}
@@ -285,19 +290,11 @@ const UploadPage = ({ user }) => {
                     primary={item.filename}
                     secondary={
                       <>
-                        <span>{item.summary.slice(0, 20)}…</span>
-                        <br />
-                        <small>{new Date(item.created_at).toLocaleString()}</small>
-                        <br />
+                        <span>{item.summary.slice(0, 20)}…</span><br/>
+                        <small>{new Date(item.created_at).toLocaleString()}</small><br/>
                         <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
                           {logoSrc && (
-                            <img
-                              src={logoSrc}
-                              alt={item.metadata.model}
-                              width={20}
-                              height={20}
-                              style={{ marginRight: 6 }}
-                            />
+                            <img src={logoSrc} alt={item.metadata.model} width={20} height={20} style={{ marginRight: 6 }} />
                           )}
                           <span>{item.metadata.model}</span>
                         </Box>
@@ -316,27 +313,66 @@ const UploadPage = ({ user }) => {
   // decide which list to draw: either the clicked history item or live summaries
   const displayList = selectedSummary ? [selectedSummary] : summaries;
 
+  // derive options from storedSummaries
+  const historyOptions = storedSummaries.map(item => ({
+    label: `${item.filename} — ${new Date(item.created_at).toLocaleString()} — ${item.metadata?.model}`,
+    item
+  }));
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            p: 0,
-            borderBottom: "1px solid #ccc",
-            backgroundColor: "#f5f5f5"
-          }}
-        >
-          
-          <img
-            src="/logos/header logo1920 x 400.gif"
-            alt="Animated NATO logo with dynamic elements, representing intelligence summarization in a modern digital workspace. The environment is professional and welcoming. The text NATO Intelligence Summarizer is displayed."
-            width={600}
-            left={20}
-          />
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 0,
+          borderBottom: "1px solid #ccc",
+          backgroundColor: "#f5f5f5"
+        }}
+      >
+        <img
+          src="/logos/header logo1920 x 400.gif"
+          alt="Animated NATO logo with dynamic elements, representing intelligence summarization in a modern digital workspace. The environment is professional and welcoming. The text NATO Intelligence Summarizer is displayed."
+          width={600}
+          left={20}
+        />
 
-          {/* user info + logout */}
+        {/* ← replace TextField with Autocomplete */}
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          <Autocomplete
+            freeSolo
+            disableOpenOnFocus
+            options={searchTerm.length > 0 ? historyOptions : []}
+            filterOptions={(opts, { inputValue }) =>
+              opts.filter(opt => {
+                const term = inputValue.toLowerCase();
+                // match on filename/date (opt.label) OR on model
+                return opt.label.toLowerCase().includes(term)
+                  || opt.item.metadata?.model.toLowerCase().includes(term);
+              })
+            }
+            getOptionLabel={opt => opt.label}
+            inputValue={searchTerm}
+            onInputChange={(e, v) => setSearchTerm(v)}
+            onChange={(e, opt) => {
+              if (opt?.item) {
+                setSelectedSummary(opt.item);
+                setSearchTerm("");
+              }
+            }}
+            sx={{ width: 650 }}
+            renderInput={params => (
+              <TextField
+                {...params}
+                size="large"
+                variant="outlined"
+                placeholder="Search past summaries…"
+              />
+            )}
+          />
+        </Box>
+
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <Typography variant="subtitle1" sx={{ mr: 2, color: theme => theme.palette.text.primary }}>
             {user.username} {user.fullName && `(${user.fullName})`}
@@ -501,28 +537,40 @@ const UploadPage = ({ user }) => {
         {/* Main */}
         <Paper elevation={3} sx={{ flex: 1, p: 4 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Select Model</Typography>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
+
+          <Grid
+            container
+            spacing={2}
+            wrap="nowrap"                // ← prevent wrapping so it’s always 1 row
+            sx={{ mb: 3, width: '100%' }} 
+          >
             {modelOptions.map(opt => (
-              <Grid item xs={3} key={opt.value} sx={{ display: "flex" }} width={180} height={138}>
+              <Grid
+                item
+                key={opt.value}
+                sx={{ flexGrow: 1, display: 'flex' }}   // ← each item flex-grows equally
+              >
                 <Box
                   onClick={() => setModel(opt.value)}
                   sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
+                    flex: 1,            // fill that Grid slot
+                    minWidth: 0,        // allow content to shrink
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                     p: 2,
                     border: 1,
-                    borderColor: model === opt.value ? "primary.main" : "grey.300",
+                    borderColor: model === opt.value ? 'primary.main' : 'grey.300',
                     borderRadius: 1,
-                    cursor: "pointer",
-                    backgroundColor: model === opt.value ? "primary.light" : "background.paper",
-                    // glow on selected
-                    boxShadow: model === opt.value
-                      ? "0 10px 20px rgba(196, 255, 3, 0.58)"
-                      : "none",
-                    transition: "box-shadow 0.2s ease",
-                    // define vibration keyframes
-                    "@keyframes vibrate": {
+                    cursor: 'pointer',
+                    backgroundColor:
+                      model === opt.value ? 'primary.light' : 'background.paper',
+                    boxShadow:
+                      model === opt.value
+                        ? '0 10px 20px rgba(196, 255, 3, 0.58)'
+                        : 'none',
+                    transition: 'box-shadow 0.2s ease',
+                    '@keyframes vibrate': {
                       "0%":   { transform: "translate(0)" },
                       "20%":  { transform: "translate(-2px, 2px)" },
                       "40%":  { transform: "translate(-2px, -2px)" },
@@ -530,14 +578,24 @@ const UploadPage = ({ user }) => {
                       "80%":  { transform: "translate(2px, -2px)" },
                       "100%": { transform: "translate(0)" }
                     },
-                    // apply vibration only when loading and this is the selected model
-                    animation: loading && model === opt.value
-                      ? "vibrate 0.9s linear infinite"
-                      : "none"
+                    animation:
+                      loading && model === opt.value
+                        ? 'vibrate 0.9s linear infinite'
+                        : 'none'
                   }}
                 >
-                  <img src={opt.logo} alt={opt.name} width={160} height={160} />
-                  <Typography sx={{ mt: 1 }}>{opt.name}</Typography>
+                  <img
+                    src={opt.logo}
+                    alt={opt.name}
+                    style={{
+                      width: '100%',    // ← always fill available width
+                      height: 'auto',
+                      maxHeight: 160    // cap the height
+                    }}
+                  />
+                  <Typography sx={{ mt: 1, textAlign: 'center' }}>
+                    {opt.name}
+                  </Typography>
                 </Box>
               </Grid>
             ))}
@@ -552,7 +610,7 @@ const UploadPage = ({ user }) => {
             variant="outlined"
             sx={{ mb: 3 }}
             value={manualText}
-            onChange={(e) => setManualText(e.target.value)}
+            onChange={e => setManualText(e.target.value)}
           />
 
           {/* Summarize Button */}
