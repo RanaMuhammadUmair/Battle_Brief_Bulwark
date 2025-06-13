@@ -244,7 +244,6 @@ const UploadPage = ({ user }) => {
   };
 
   const renderHistory = () => {
-    console.log("Rendering history with summaries:", storedSummaries); // Debugging log
     const sorted = [...storedSummaries].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
@@ -256,41 +255,58 @@ const UploadPage = ({ user }) => {
           <Typography>No summaries.</Typography>
         ) : (
           <List>
-            {sorted.map((item) => (
-              <ListItem
-                key={item.id}
-                button
-                onClick={() => {
-                  setSelectedSummary(item);
-                  setDrawerOpen(false);
-                }}
-                secondaryAction={
-                  <IconButton
-                    edge="end"
-                    color="error"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item.id);
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                }
-              >
-                <ListItemText
-                  primary={item.filename}
-                  secondary={
-                    <>
-                      <span>{item.summary.slice(0, 20)}…</span>
-                      <br />
-                      <small>{new Date(item.created_at).toLocaleString()}</small>
-                      <br />
-                      <span>{item.metadata.model}</span>
-                    </>
+            {sorted.map((item) => {
+              // find logo for this model, swap .gif → .png
+              const opt = modelOptions.find(o => o.value === item.metadata?.model);
+              const logoSrc = opt?.logo.replace('.gif', '.png') || "";
+
+              return (
+                <ListItem
+                  key={item.id}
+                  button
+                  onClick={() => {
+                    setSelectedSummary(item);
+                    setDrawerOpen(false);
+                  }}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item.id);
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
                   }
-                />
-              </ListItem>
-            ))}
+                >
+                  <ListItemText
+                    primary={item.filename}
+                    secondary={
+                      <>
+                        <span>{item.summary.slice(0, 20)}…</span>
+                        <br />
+                        <small>{new Date(item.created_at).toLocaleString()}</small>
+                        <br />
+                        <Box component="span" sx={{ display: "flex", alignItems: "center" }}>
+                          {logoSrc && (
+                            <img
+                              src={logoSrc}
+                              alt={item.metadata.model}
+                              width={20}
+                              height={20}
+                              style={{ marginRight: 6 }}
+                            />
+                          )}
+                          <span>{item.metadata.model}</span>
+                        </Box>
+                      </>
+                    }
+                  />
+                </ListItem>
+              );
+            })}
           </List>
         )}
       </Box>
@@ -425,21 +441,42 @@ const UploadPage = ({ user }) => {
             {modelStats
               .sort((a, b) => b.averages[rankingCriterion] - a.averages[rankingCriterion])
               .map(ms => {
+                const opt = modelOptions.find(o => o.value === ms.model);
+                const logoSrc = opt?.logo.replace('.gif', '.gif') || '';     // use the logo png vs gif
                 const pct = storedSummaries.length
                   ? (ms.count / storedSummaries.length) * 100
                   : 0;
                 return (
                   <ListItem
                     key={ms.model}
-                    sx={{ flexDirection: "column", alignItems: "flex-start" }}
+                    sx={{
+                      // stack vertically, but left-align all children
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      // remove default ListItem padding so img & bar start at edge
+                      px: 0,
+                      py: 1
+                    }}
                   >
-                    <ListItemText
-                      primary={`${ms.model} (${ms.count})`}
-                      secondary={`Avg ${rankingCriterion}: ${(ms.averages[rankingCriterion] || 0).toFixed(2)}`}
-                    />
-                    <Box sx={{ width: "100%", mt: 1 }}>
-                      <LinearProgress variant="determinate" value={pct} />
-                      <Typography variant="caption" sx={{ ml: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      {logoSrc && (
+                        <img
+                          src={logoSrc}
+                          alt={ms.model}
+                          width={64}
+                          height={24}
+                          style={{ marginRight: 1 }}
+                        />
+                      )}
+                      <ListItemText
+                        primary={`${ms.model} (${ms.count})`}
+                        secondary={`Avg ${rankingCriterion}: ${(ms.averages[rankingCriterion] || 0).toFixed(2)}`}
+                        sx={{ ml: 0 }}
+                      />
+                    </Box>
+                    <Box sx={{ width: '100%', mt: 1 }}>
+                      <LinearProgress variant="determinate" value={pct} sx={{ height: 8, borderRadius: 4 }} />
+                      <Typography variant="caption" sx={{ ml: 0, mt: .5 }}>
                         {pct.toFixed(0)}% of total
                       </Typography>
                     </Box>
@@ -483,7 +520,20 @@ const UploadPage = ({ user }) => {
                     boxShadow: model === opt.value
                       ? "0 10px 20px rgba(196, 255, 3, 0.58)"
                       : "none",
-                    transition: "box-shadow 0.2s ease"
+                    transition: "box-shadow 0.2s ease",
+                    // define vibration keyframes
+                    "@keyframes vibrate": {
+                      "0%":   { transform: "translate(0)" },
+                      "20%":  { transform: "translate(-2px, 2px)" },
+                      "40%":  { transform: "translate(-2px, -2px)" },
+                      "60%":  { transform: "translate(2px, 2px)" },
+                      "80%":  { transform: "translate(2px, -2px)" },
+                      "100%": { transform: "translate(0)" }
+                    },
+                    // apply vibration only when loading and this is the selected model
+                    animation: loading && model === opt.value
+                      ? "vibrate 0.9s linear infinite"
+                      : "none"
                   }}
                 >
                   <img src={opt.logo} alt={opt.name} width={160} height={160} />
