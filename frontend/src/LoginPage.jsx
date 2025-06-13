@@ -5,6 +5,7 @@ import {
     TextField, Button, Alert
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import bgVideo from './assets/videos/BATTLE-BRIEF_bg-1080p.mp4';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -37,16 +38,52 @@ const LoginPage = () => {
     return (
         <Box
             sx={{
-                minHeight: "100vh",
-                bgcolor: "background.default",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                py: 4
+                position: 'relative',
+                minHeight: '100vh',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                bgcolor: 'transparent',
+                py: 4,
             }}
         >
-            <Container maxWidth="xs">
-                <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 1 }}>
+            <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                src="/videos/BATTLE-BRIEF_bg-1080p.mp4"
+                onLoadedData={() => console.log('✅ video loaded')}
+                onError={e => console.error('❌ video error', e)}
+                style={{
+                    position: 'fixed',    // cover viewport regardless of parent
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                
+                    objectFit: 'cover',
+                    zIndex: 0,            // sit just above the body background
+                }}
+            />
+
+            <Container
+                maxWidth="xs"
+                sx={{
+                    position: 'relative',
+                    zIndex: 1,            // raise form above the video
+                }}
+            >
+                <Paper
+                    elevation={3}
+                    sx={{
+                        p: { xs: 2, sm: 4 },
+                        borderRadius: 1,
+                        bgcolor: 'rgba(255, 255, 255, 0.7)',   // ← translucent white
+                        backdropFilter: 'blur(1px)'         // ← optional frosted-glass effect
+                    }}
+                >
                     <Stack alignItems="center" spacing={1} sx={{ mb: 2 }}>
                         <Avatar sx={{ bgcolor: "primary.main" }}>
                             <LockOutlinedIcon />
@@ -70,6 +107,7 @@ const LoginPage = () => {
                             label="Password"
                             type="password"
                             fullWidth
+                            changeColor="white"
                             margin="dense"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
