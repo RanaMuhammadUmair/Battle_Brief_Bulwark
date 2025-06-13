@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import {
+    Box, Container, Paper, Stack, Avatar, Typography,
+    TextField, Button, Alert
+} from '@mui/material';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -7,65 +12,84 @@ const LoginPage = () => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
-    const handleLogin = async (e) => {
+    const handleLogin = async e => {
         e.preventDefault();
         try {
-            const response = await fetch("http://localhost:8000/login", {
+            const res = await fetch("http://localhost:8000/login", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: new URLSearchParams({
-                    username,
-                    password
-                }),
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ username, password })
             });
-            if (!response.ok) {
+            if (!res.ok) {
                 setError("Invalid credentials");
                 return;
             }
-            const data = await response.json();
+            const data = await res.json();
             localStorage.setItem("token", data.access_token);
             localStorage.setItem("username", username);
             localStorage.setItem("fullName", data.full_name || "");
-            navigate("/upload");  // Redirect to UploadPage on success
-        } catch (err) {
-            console.error(err);
+            navigate("/upload");
+        } catch {
             setError("Login failed");
         }
     };
 
     return (
-        <div className="container">
-            <h2>Login</h2>
-            {error && <p className="error">{error}</p>}
-            <form onSubmit={handleLogin}>
-                <div className="form-group">
-                    <input 
-                        type="text" 
-                        placeholder="Username" 
-                        value={username} 
-                        onChange={e => setUsername(e.target.value)}
-                        required 
-                        className="bg-white text-gray-700" // Set background to white and text color
-                    />
-                </div>
-                <div className="form-group">
-                    <input 
-                        type="password" 
-                        placeholder="Password" 
-                        value={password} 
-                        onChange={e => setPassword(e.target.value)}
-                        required 
-                        className="bg-white text-gray-700" // Set background to white and text color
-                    />
-                </div>
-                <button type="submit" className="btn">Login</button>
-            </form>
-            <p>
-                Don't have an account? <Link to="/signup">Sign Up here</Link>
-            </p>
-        </div>
+        <Box
+            sx={{
+                minHeight: "100vh",
+                bgcolor: "background.default",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                py: 4
+            }}
+        >
+            <Container maxWidth="xs">
+                <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 1 }}>
+                    <Stack alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                        <Avatar sx={{ bgcolor: "primary.main" }}>
+                            <LockOutlinedIcon />
+                        </Avatar>
+                        <Typography variant="h5" sx={{ letterSpacing: 1 }}>
+                            Login
+                        </Typography>
+                    </Stack>
+
+                    {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+                    <Box component="form" onSubmit={handleLogin} noValidate>
+                        <TextField
+                            label="Username"
+                            fullWidth
+                            margin="dense"
+                            value={username}
+                            onChange={e => setUsername(e.target.value)}
+                        />
+                        <TextField
+                            label="Password"
+                            type="password"
+                            fullWidth
+                            margin="dense"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                        />
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            sx={{ mt: 2 }}
+                        >
+                            Login
+                        </Button>
+                    </Box>
+
+                    <Typography align="center" sx={{ mt: 2 }}>
+                        Don’t have an account? <Link to="/signup">Sign Up here</Link>
+                    </Typography>
+                </Paper>
+            </Container>
+        </Box>
     );
 };
 
