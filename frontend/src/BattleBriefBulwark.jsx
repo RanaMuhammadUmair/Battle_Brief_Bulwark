@@ -64,7 +64,8 @@ import ReactMarkdown from "react-markdown";
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mb
 
-const UploadPage = ({ user }) => {
+// const UploadPage = ({ user }) => {
+const BattleBriefBulwark = ({ user }) => {
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [manualText, setManualText] = useState("");
@@ -908,4 +909,4 @@ const UploadPage = ({ user }) => {
   );
 };
 
-export default UploadPage;
+export default BattleBriefBulwark;

@@ -230,8 +230,8 @@ const SettingPage = ({ user }) => {
                     </Stack>
 
                     <Box sx={{ mt: 2, textAlign: "right" }}>
-                        <Button variant="text" onClick={() => navigate("/upload")}>
-                            Cancel
+                        <Button variant="text" onClick={() => navigate("/battle-brief-bulwark")}>
+                            Go to summary page
                         </Button>
                     </Box>
                 </Paper>

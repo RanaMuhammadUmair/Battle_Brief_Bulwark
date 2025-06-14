@@ -29,7 +29,7 @@ const LoginPage = () => {
             localStorage.setItem("token", data.access_token);
             localStorage.setItem("username", username);
             localStorage.setItem("fullName", data.full_name || "");
-            navigate("/upload");
+            navigate("/battle-brief-bulwark");
         } catch {
             setError("Login failed");
         }

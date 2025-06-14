@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import UploadPage from "./UploadPage.jsx";
+import BattleBriefBulwark from "./BattleBriefBulwark.jsx";
 import LoginPage from "./LoginPage.jsx";
 import SignUpPage from "./SignUpPage.jsx";
 import SettingPage from "./SettingPage.jsx";
@@ -28,11 +28,10 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
 
         <Route
-          path="/upload"
+          path="/battle-brief-bulwark"
           element={
             <PrivateRoute>
-              {/* now UploadPage will receive user.username + user.fullName */}
-              <UploadPage user={user} />
+              <BattleBriefBulwark user={user} />
             </PrivateRoute>
           }
         />

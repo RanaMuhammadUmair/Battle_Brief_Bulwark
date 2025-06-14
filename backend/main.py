@@ -12,6 +12,9 @@ from auth import router as auth_router
 from users_db import initialize_db
 from detoxify import Detoxify
 from evaluation_module import evaluate_with_mistral_small
+from dotenv import load_dotenv  
+load_dotenv()
+
 
 # Configure logging
 logging.basicConfig(
