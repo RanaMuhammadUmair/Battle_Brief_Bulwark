@@ -817,50 +817,41 @@ const BattleBriefBulwark = ({ user }) => {
                               <TableCell>Category</TableCell>
                               <TableCell>Report (%)</TableCell>
                               <TableCell>Summary (%)</TableCell>
-                              <TableCell>Difference</TableCell>
+                              <TableCell>Difference (%)</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {Object.keys(item.metadata.detox_report).map(cat => {
-                              const rep = (item.metadata.detox_report[cat] || 0) * 100;
-                              const sum = (item.metadata.detox_summary[cat] || 0) * 100;
-                              const diff = (sum - rep).toFixed(2);
+                              const rep  = (item.metadata.detox_report[cat]    || 0) * 100;
+                              const sum  = (item.metadata.detox_summary[cat]   || 0) * 100;
+                              const diff = (item.metadata.detox_difference[cat]|| 0) * 100;
                               return (
                                 <TableRow key={cat}>
-                                  <TableCell>{cat.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase())}</TableCell>
+                                  <TableCell>
+                                    {cat.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                                  </TableCell>
                                   <TableCell>{rep.toFixed(2)}</TableCell>
                                   <TableCell>{sum.toFixed(2)}</TableCell>
-                                  <TableCell sx={{ color: diff<=0?"green":"red" }}>{diff}</TableCell>
+                                  <TableCell sx={{ color: diff >= 0 ? "green" : "red" }}>
+                                    {diff.toFixed(2)}
+                                  </TableCell>
                                 </TableRow>
                               );
                             })}
-                            {/* Overall row */}
+
+                            {/* Overall row (now provided by backend) */}
                             <TableRow>
                               <TableCell><strong>Overall</strong></TableCell>
                               <TableCell>
-                                {(
-                                  Object.values(item.metadata.detox_report||{}).reduce((a,v)=>a+v,0) / 
-                                  Object.keys(item.metadata.detox_report||{}).length * 100
-                                ).toFixed(2)}
+                                {(item.metadata.detox_report.overall  * 100).toFixed(2)}
                               </TableCell>
                               <TableCell>
-                                {(
-                                  Object.values(item.metadata.detox_summary||{}).reduce((a,v)=>a+v,0) / 
-                                  Object.keys(item.metadata.detox_summary||{}).length * 100
-                                ).toFixed(2)}
+                                {(item.metadata.detox_summary.overall * 100).toFixed(2)}
                               </TableCell>
                               <TableCell sx={{
-                                color: (
-                                  Object.keys(item.metadata.detox_report||{}).reduce((acc,cat) => {
-                                    return acc + ((item.metadata.detox_summary[cat]||0) - (item.metadata.detox_report[cat]||0));
-                                  },0) / Object.keys(item.metadata.detox_report||{}).length * 100
-                                ) <= 0 ? "green":"red"
+                                color: (item.metadata.detox_difference.overall * 100) >= 0 ? "green" : "red"
                               }}>
-                                {(
-                                  Object.keys(item.metadata.detox_report||{}).reduce((acc,cat) => {
-                                    return acc + ((item.metadata.detox_summary[cat]||0) - (item.metadata.detox_report[cat]||0));
-                                  },0) / Object.keys(item.metadata.detox_report||{}).length * 100
-                                ).toFixed(2)}
+                                {(item.metadata.detox_difference.overall * 100).toFixed(2)}
                               </TableCell>
                             </TableRow>
                           </TableBody>

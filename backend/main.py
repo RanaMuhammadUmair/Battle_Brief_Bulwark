@@ -101,17 +101,30 @@ async def summarize(
             # run Detoxify as before
             summary_scores = detox_model.predict(summary)
             summary_scores = {label: float(score) for label, score in summary_scores.items()}
+            # compute overall average for summary
+            overall_summary = sum(summary_scores.values()) / len(summary_scores)
+            summary_scores["overall"] = overall_summary
 
             # run Detoxify on the original report text
             report_scores = detox_model.predict(plain_text)
             report_scores = {label: float(score) for label, score in report_scores.items()}
+            # compute overall average for report
+            overall_report = sum(report_scores.values()) / len(report_scores)
+            report_scores["overall"] = overall_report
+
+            # calculate difference scores (report minus summary)
+            scores_difference = {
+                label: report_scores[label] - summary_scores[label]
+                for label in report_scores
+            }
 
             metadata = {
-              "filename":       file.filename,
-              "model":          model,
-              "detox_summary":  summary_scores,
-              "detox_report":   report_scores,
-              "quality_scores": quality_scores,     # ← added
+              "filename":         file.filename,
+              "model":            model,
+              "detox_summary":    summary_scores,
+              "detox_report":     report_scores,
+              "detox_difference": scores_difference,
+              "quality_scores":   quality_scores,
             }
             
             db.save_summary(user_id, plain_text, summary, metadata)
