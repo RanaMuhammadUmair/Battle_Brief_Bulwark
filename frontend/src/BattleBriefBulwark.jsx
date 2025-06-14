@@ -830,10 +830,10 @@ const BattleBriefBulwark = ({ user }) => {
                                   <TableCell>
                                     {cat.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
                                   </TableCell>
-                                  <TableCell>{rep.toFixed(2)}</TableCell>
-                                  <TableCell>{sum.toFixed(2)}</TableCell>
+                                  <TableCell>{rep.toFixed(4)}</TableCell>
+                                  <TableCell>{sum.toFixed(4)}</TableCell>
                                   <TableCell sx={{ color: diff >= 0 ? "green" : "red" }}>
-                                    {diff.toFixed(2)}
+                                    {diff.toFixed(4)}
                                   </TableCell>
                                 </TableRow>
                               );
@@ -843,15 +843,15 @@ const BattleBriefBulwark = ({ user }) => {
                             <TableRow>
                               <TableCell><strong>Overall</strong></TableCell>
                               <TableCell>
-                                {(item.metadata.detox_report.overall  * 100).toFixed(2)}
+                                {(item.metadata.detox_report.overall  * 100).toFixed(4)}
                               </TableCell>
                               <TableCell>
-                                {(item.metadata.detox_summary.overall * 100).toFixed(2)}
+                                {(item.metadata.detox_summary.overall * 100).toFixed(4)}
                               </TableCell>
                               <TableCell sx={{
                                 color: (item.metadata.detox_difference.overall * 100) >= 0 ? "green" : "red"
                               }}>
-                                {(item.metadata.detox_difference.overall * 100).toFixed(2)}
+                                {(item.metadata.detox_difference.overall * 100).toFixed(4)}
                               </TableCell>
                             </TableRow>
                           </TableBody>
