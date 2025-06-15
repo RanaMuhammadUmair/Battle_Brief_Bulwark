@@ -11,7 +11,10 @@ const PrivateRoute = ({ children }) => {
 };
 
 function App() {
-  const [user, setUser] = useState({ username: "", fullName: "" });
+  const [user, setUser] = useState({
+    username: localStorage.getItem("username") || "",
+    fullName:  localStorage.getItem("fullName") || ""
+  });
 
   useEffect(() => {
     // whenever App mounts, pull user info out of localStorage

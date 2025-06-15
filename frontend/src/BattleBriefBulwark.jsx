@@ -36,7 +36,8 @@ import {
   Menu,
   ListItemIcon,
   Tooltip as MuiTooltip,   // avoid name clash
-  Stack
+  Stack,
+  CardHeader
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from "@mui/icons-material/History";
@@ -82,6 +83,7 @@ const BattleBriefBulwark = ({ user }) => {
   // Ranking state
   const [rankingCriterion, setRankingCriterion] = useState("overall");
   const [modelStats, setModelStats] = useState([]);
+  const [ethicalCriterion, setEthicalCriterion] = useState('overall');
 
   const modelOptions = [
     { name: "GPT-4.1",    value: "GPT-4.1",    logo: "/logos/ChatGPT-Logo.gif" },
@@ -603,16 +605,158 @@ const BattleBriefBulwark = ({ user }) => {
             })}
           {/* ===== end Model Ranking Section ====== */}
 
-          <Button
-            startIcon={<SettingsIcon />}
-            fullWidth
-            variant="outlined"
-            color="secondary"
-            sx={{ mt: 'auto' }}
-            onClick={() => navigate("/settings")}
+          <Divider sx={{ my: 2 }} />
+          <Card sx={{ mb: 2, p: 2, backgroundColor: 'background.paper' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <SettingsIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                Model Ethical Ranking
+              </Typography>
+            </Box>
+
+            <Typography
+              variant="body2"
+              sx={{ mb: 2, display: 'flex', alignItems: 'baseline' }}
+            >
+              Total Summaries:&nbsp;
+              <Typography
+                component="span"
+                variant="h6"
+                sx={{ fontWeight: 'bold', ml: 0.5 }}
+              >
+                {storedSummaries.length}
+              </Typography>
+            </Typography>
+
+            <FormControl fullWidth size="small" sx={{ mb: 3 }}>
+              <InputLabel>Sort by</InputLabel>
+              <Select
+                value={ethicalCriterion}
+                label="Sort by"
+                onChange={e => setEthicalCriterion(e.target.value)}
+              >
+                <MenuItem value="toxicity">Toxicity</MenuItem>
+                <MenuItem value="severe_toxicity">Severe Toxicity</MenuItem>
+                <MenuItem value="obscene">Obscene</MenuItem>
+                <MenuItem value="identity_attack">Identity Attack</MenuItem>
+                <MenuItem value="insult">Insult</MenuItem>
+                <MenuItem value="threat">Threat</MenuItem>
+                <MenuItem value="sexual_explicit">Sexual Explicit</MenuItem>
+                <MenuItem value="overall">Overall Unethical Content</MenuItem>
+              </Select>
+            </FormControl>
+          </Card>
+
+          {(() => {
+  // 1) build per‐model inverted averages for all eight fields
+  const KEYS = [
+    "toxicity",
+    "severe_toxicity",
+    "obscene",
+    "identity_attack",
+    "insult",
+    "threat",
+    "sexual_explicit",
+    "overall",
+  ];
+  const ethStats = modelStats
+    .map(ms => {
+      const entries = storedSummaries.filter(s => s.metadata.model === ms.model);
+      const total = entries.length;
+      const avgs = KEYS.reduce((acc, key) => {
+        const sum = entries.reduce(
+          (s, item) =>
+            s + (Number(item.metadata.percentage_reduction?.[key]) || 0),
+          0
+        );
+        acc[key] = total > 0 ? sum / total : 0;
+        return acc;
+      }, {});
+      return { ...ms, total, avgs };
+    })
+    // sort by the selected field
+    .sort((a, b) => b.avgs[ethicalCriterion] - a.avgs[ethicalCriterion]);
+
+  return ethStats.map(ms => {
+    const opt = modelOptions.find(o => o.value === ms.model) || {};
+    const logo = opt.logo?.replace(".gif", ".png") ?? "";
+    const score = ms.avgs[ethicalCriterion].toFixed(2);
+    return (
+      <Accordion key={ms.model} sx={{ mb: 2 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '84px 1fr',
+              rowGap: 0.1,
+              alignItems: 'start',
+              width: '100%',
+            }}
           >
-            Settings
-          </Button>
+            {/* Avatar */}
+            <Avatar
+              variant="square"
+              src={logo}
+              alt={ms.model}
+              sx={{ gridRow: "1 / 4", width: 70, height: 50, borderRadius: 1 }}
+            />
+            {/* Model Name */}
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: "bold", textTransform: "uppercase" }}
+            >
+              {ms.model}
+            </Typography>
+            {/* Count + Selected criterion */}
+            <Box
+              sx={{ display: "flex", alignItems: "center", color: "text.secondary" }}
+            >
+              <Typography
+                component="span"
+                variant="h5"
+                sx={{ fontWeight: "bold", mr: 1, lineHeight: 1 }}
+              >
+                {ms.total}
+              </Typography>
+              <Typography component="span" variant="body2">
+                Reduction in {ethicalCriterion.replace("_", " ")}: {score}%
+              </Typography>
+            </Box>
+            {/* Progress Bar */}
+            <Box sx={{ width: "100%" }}>
+              <LinearProgress
+                variant="determinate"
+                value={Number(score)}
+                sx={{ height: 6, borderRadius: 3 }}
+              />
+            </Box>
+          </Box>
+        </AccordionSummary>
+        {/* DETAILS: show all eight fields with prefix */}
+        <AccordionDetails>
+          {KEYS.map(key => {
+            const val = ms.avgs[key].toFixed(2);
+            return (
+              <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Typography sx={{ width: 120 }}>
+                  Reduction in {key.replace('_', ' ')}
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={Number(val)}
+                  sx={{ flexGrow: 1, mx: 1, height: 6, borderRadius: 3 }}
+                />
+                <Typography variant="body2" sx={{ width: 40, textAlign: 'right' }}>
+                  {val}%
+                </Typography>
+              </Box>
+            );
+          })}
+        </AccordionDetails>
+      </Accordion>
+    );
+  });
+})()}
         </Box>
 
         {/* Main */}
@@ -817,14 +961,14 @@ const BattleBriefBulwark = ({ user }) => {
                               <TableCell>Category</TableCell>
                               <TableCell>Report (%)</TableCell>
                               <TableCell>Summary (%)</TableCell>
-                              <TableCell>Difference (%)</TableCell>
+                              <TableCell>Reduction (%)</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {Object.keys(item.metadata.detox_report).map(cat => {
                               const rep  = (item.metadata.detox_report[cat]    || 0) * 100;
                               const sum  = (item.metadata.detox_summary[cat]   || 0) * 100;
-                              const diff = (item.metadata.detox_difference[cat]|| 0) * 100;
+                              const diff = (item.metadata.percentage_reduction[cat]|| 0) ;
                               return (
                                 <TableRow key={cat}>
                                   <TableCell>
@@ -839,21 +983,7 @@ const BattleBriefBulwark = ({ user }) => {
                               );
                             })}
 
-                            {/* Overall row (now provided by backend) */}
-                            <TableRow>
-                              <TableCell><strong>Overall</strong></TableCell>
-                              <TableCell>
-                                {(item.metadata.detox_report.overall  * 100).toFixed(4)}
-                              </TableCell>
-                              <TableCell>
-                                {(item.metadata.detox_summary.overall * 100).toFixed(4)}
-                              </TableCell>
-                              <TableCell sx={{
-                                color: (item.metadata.detox_difference.overall * 100) >= 0 ? "green" : "red"
-                              }}>
-                                {(item.metadata.detox_difference.overall * 100).toFixed(4)}
-                              </TableCell>
-                            </TableRow>
+                            
                           </TableBody>
                         </Table>
                       </TableContainer>

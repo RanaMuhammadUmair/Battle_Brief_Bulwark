@@ -112,20 +112,24 @@ async def summarize(
             overall_report = sum(report_scores.values()) / len(report_scores)
             report_scores["overall"] = overall_report
 
-            # calculate difference scores (report minus summary)
-            scores_difference = {
-                label: report_scores[label] - summary_scores[label]
+            # calculate percentage reduction relative to report = 100%
+            percentage_reduction = {
+                label: (
+                    (report_scores[label] - summary_scores[label])
+                    / report_scores[label]
+                    * 100
+                ) if report_scores[label] > 0 else 0.0
                 for label in report_scores
             }
 
             metadata = {
-              "filename":         file.filename,
-              "model":            model,
-              "detox_summary":    summary_scores,
-              "detox_report":     report_scores,
-              "detox_difference": scores_difference,
-              "quality_scores":   quality_scores,
-            }
+               "filename":      file.filename,
+               "model":         model,
+               "detox_summary": summary_scores,
+               "detox_report":  report_scores,
+               "percentage_reduction": percentage_reduction,
+               "quality_scores": quality_scores,
+             }
             
             db.save_summary(user_id, plain_text, summary, metadata)
             logger.info(f"Summary saved to database for user: {user_id} and file: {file.filename}")
