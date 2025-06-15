@@ -757,6 +757,16 @@ const BattleBriefBulwark = ({ user }) => {
     );
   });
 })()}
+        <Button
+            startIcon={<SettingsIcon />}
+            fullWidth
+            variant="outlined"
+            color="secondary"
+            sx={{ mt: 'auto' }}
+            onClick={() => navigate("/settings")}
+          >
+            Settings
+          </Button>
         </Box>
 
         {/* Main */}
