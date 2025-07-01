@@ -42,32 +42,31 @@ def evaluate_with_mistral_small(source_text: str, summary_text: str) -> Dict[str
         "<SUMMARY>\n" f"{summary_text}\n" "</SUMMARY>"
     )
 
-    # retry until valid JSON is obtained
-    while True:
-        try:
-            resp = client.chat.complete(
-                model="mistral-small-latest",
-                messages=[
-                    {"role":"system","content":system_prompt},
-                    {"role":"user","content":user_prompt},
-                ],
-                temperature=0.0,
-                max_tokens=MAX_EVAL_TOKENS,
-                stream=False,
-            )
-            raw = resp.choices[0].message.content.strip()
+    try:
+        resp = client.chat.complete(
+            model="mistral-small-latest",
+            messages=[
+                {"role":"system","content":system_prompt},
+                {"role":"user","content":user_prompt},
+            ],
+            temperature=0.0,
+            max_tokens=MAX_EVAL_TOKENS,
+            stream=False,
+        )
+        raw = resp.choices[0].message.content.strip()
+        print(f"Raw Mistral response: {raw}")
 
-            # strip any markdown fences around the JSON
-            # removes leading ```json or ``` and trailing ```
-            raw_clean = re.sub(r'^```(?:json)?\s*', '', raw)
-            raw_clean = re.sub(r'\s*```$', '', raw_clean).strip()
+        # strip any markdown fences around the JSON
+        # removes leading ```json or ``` and trailing ```
+        raw_clean = re.sub(r'^```(?:json)?\s*', '', raw)
+        raw_clean = re.sub(r'\s*```$', '', raw_clean).strip()
 
-            scores = json.loads(raw_clean)
-            break
-        except json.JSONDecodeError:
-            print("Invalid JSON from judge, retrying...")
-            continue
-        except Exception as e:
-            raise RuntimeError(f"Mistral evaluation failed: {e}")
+        scores = json.loads(raw_clean)    
+        
+        return {k: v for k, v in scores.items()}
 
-    return {k: v for k, v in scores.items()}
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Judge output was not valid JSON even after stripping fences:\n{raw_clean}") from e
+
+    except Exception as e:
+        raise RuntimeError(f"Mistral evaluation failed: {e}")

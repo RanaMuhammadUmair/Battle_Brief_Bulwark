@@ -1,4 +1,6 @@
 import logging
+from dotenv import load_dotenv  
+load_dotenv()
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -12,8 +14,7 @@ from auth import router as auth_router
 from users_db import initialize_db
 from detoxify import Detoxify
 from evaluation_module import evaluate_with_mistral_small
-from dotenv import load_dotenv  
-load_dotenv()
+
 
 
 # Configure logging

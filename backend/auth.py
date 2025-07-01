@@ -4,13 +4,14 @@ from fastapi import APIRouter, HTTPException, status, Body, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from passlib.context import CryptContext
+import os
 from pydantic import BaseModel, Field, EmailStr
 from users_db import get_user, create_user, update_user, update_user_password  # Import the SQLite retrieval and creation functions
 
 # --- Configuration ---
-SECRET_KEY = "YOUR_SECRET_KEY"  # Replace with a secure key in production
+SECRET_KEY = os.getenv("AUTH_SECRET_KEY")  # Replace with a secure key in production
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
 
 # --- Password Hashing Utility ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
