@@ -1,4 +1,4 @@
-# NATO Military Intelligence Summarizer
+# Battle Brief buklwark
 
 A web-based application for summarizing military reports using various LLM (Large Language Model) technologies.
 
@@ -6,7 +6,7 @@ A web-based application for summarizing military reports using various LLM (Larg
 
 - Secure login system
 - Upload and process various document formats (PDF, DOC, TXT)
-- Multiple AI model selection (GPT-4, BART, Claude, T5)
+- Multiple AI model selection (GPT-4, BART, Claude, Grok etc)
 - Ethical content filtering
 - Summary history tracking
 - Modern, responsive UI
