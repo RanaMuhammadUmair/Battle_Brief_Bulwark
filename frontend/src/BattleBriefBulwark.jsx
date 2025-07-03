@@ -88,7 +88,7 @@ const BattleBriefBulwark = ({ user }) => {
   const modelOptions = [
     { name: "GPT-4.1",    value: "GPT-4.1",    logo: "/logos/ChatGPT-Logo.gif" },
     { name: "BART",       value: "BART",       logo: "/logos/meta-logo.gif" },
-    { name: "CLAUDE",     value: "CLAUDE",     logo: "/logos/anthropic-logo.gif" },
+    { name: "CLAUDE SONNET 3.7",     value: "CLAUDE SONNET 3.7",     logo: "/logos/anthropic-logo.gif" },
     { name: "Mistral small",         value: "Mistral small",         logo: "/logos/mistral-logo.gif" },
     { name: "Gemini 2.5 Pro", value: "Gemini 2.5 Pro", logo: "/logos/Cgemini-logo.gif" },
     { name: "DeepSeek-R1", value: "DeepSeek-R1", logo: "/logos/deepseek-logo.gif" },

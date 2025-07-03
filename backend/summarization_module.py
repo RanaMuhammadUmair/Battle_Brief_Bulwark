@@ -24,7 +24,7 @@ def summarize_text(text, model_name):
     # Generate summary using the selected model
     if model_name == "GPT-4.1":
         summary = summarize_with_gpt_4point1(text)
-    elif model_name == "CLAUDE":
+    elif model_name == "CLAUDE SONNET 3.7":
         summary = summarize_with_claude_sonnet_3_7(text)
     elif model_name == "BART":
         summary = summarize_with_bart(text)
