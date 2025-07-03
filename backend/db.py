@@ -36,12 +36,12 @@ class Database:
         self.conn.execute(query, (user_id, filename, plain_text, summary, metadata_json))
         self.conn.commit()
         
-        # Retain only the last 100 summaries for this user
+        # Retain only the last 120 summaries for this user
         count_query = "SELECT COUNT(*) as count FROM summaries WHERE user_id = ?"
         count_result = self.conn.execute(count_query, (user_id,)).fetchone()
         summary_count = count_result["count"]
-        if summary_count > 100:
-            num_to_remove = summary_count - 100
+        if summary_count > 120:
+            num_to_remove = summary_count - 120
             delete_query = """
             DELETE FROM summaries 
             WHERE id IN (
