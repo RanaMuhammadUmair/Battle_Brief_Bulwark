@@ -20,26 +20,70 @@ load_dotenv()
 MAX_SUMMARY_TOKENS = 650
 
 def summarize_text(text, model_name):
-    summary = None  
-    # Generate summary using the selected model
+    """
+    Dispatch text summarization to the selected model implementation.
+
+    Args:
+        text (str): The input report or document to summarize.
+        model_name (str): Identifier of the summarization model to use.
+            Supported values:
+              - "GPT-4.1"
+              - "CLAUDE SONNET 3.7"
+              - "BART"
+              - "Mistral small"
+              - "Gemini 2.5 Pro"
+              - "DeepSeek-R1"
+              - "Llama 3.1"
+              - "Grok 3"
+
+    Returns:
+        str: The summary produced by the chosen model function. If an
+             unsupported model is passed, returns an error message listing
+             valid options.
+    """
+    summary = None
+
+    # Select the appropriate summarization backend based on model_name
     if model_name == "GPT-4.1":
+        # Use OpenAI GPT-4.1 via the OpenAI SDK
         summary = summarize_with_gpt_4point1(text)
+
     elif model_name == "CLAUDE SONNET 3.7":
+        # Use Anthropic Claude Sonnet 3.7 client
         summary = summarize_with_claude_sonnet_3_7(text)
+
     elif model_name == "BART":
+        # Use Hugging Face’s BART sequence‐to‐sequence model
         summary = summarize_with_bart(text)
+
     elif model_name == "Mistral small":
+        # Use Mistral AI’s small model via their Python SDK
         summary = summarize_with_mistral_small(text)
+
     elif model_name == "Gemini 2.5 Pro":
+        # Use Google’s Gemini 2.5 Pro via google-generativeai
         summary = summarize_with_gemini2point5_pro(text)
+
     elif model_name == "DeepSeek-R1":
+        # Use DeepSeek-R1 hosted on RunPod
         summary = summarize_with_DeepSeek_R1_runpod(text)
+
     elif model_name == "Llama 3.1":
+        # Use RunPod’s Llama-3.1 via the OpenAI-compatible endpoint
         summary = summarize_with_llama3_point_1(text)
+
     elif model_name == "Grok 3":
+        # Use xAI’s Grok 3-latest model via OpenAI-compatible client
         summary = summarize_with_grok_3(text)
+
     else:
-        return "Error: Unsupported model selected. Please choose from GPT-4, Claude, BART, T5, or Gemini 2.5 Pro."
+        # Fallback for unsupported model names
+        return (
+            "Error: Unsupported model selected. "
+            "Please choose from GPT-4.1, CLAUDE SONNET 3.7, BART, "
+            "Mistral small, Gemini 2.5 Pro, DeepSeek-R1, Llama 3.1, or Grok 3."
+        )
+
     return summary
 
 def summarize_with_llama3_point_1(text: str) -> str:
