@@ -153,16 +153,29 @@ def summarize_with_llama3_point_1(text: str) -> str:
 
 
 def summarize_with_DeepSeek_R1_runpod(text):
+    """
+    Summarizing text using DeepSeek-R1 hosted on RunPod via the OpenAI-compatible endpoint.
+
+    Args:
+        text (str): The input report text to be summarized.
+
+    Returns:
+        str: The generated summary, or an error message on failure.
+    """
+    # Retrieving the RunPod endpoint identifier for DeepSeek-R1 from environment
     deepseek_R1_endpoint_id = os.getenv("DEEPSEEK_R1_ENDPOINT_ID")
+    # Constructing the RunPod chat completions URL
     url = f"https://api.runpod.ai/v2/{deepseek_R1_endpoint_id}/openai/v1/chat/completions"
 
+    # Preparing request headers with JSON content type and Bearer token
     headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {os.getenv("RUNPOD_API_KEY")}'
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.getenv('RUNPOD_API_KEY')}"
     }
 
+    # Building the payload: model spec, system/user prompts, and generation parameters
     data = {
-        "model": "deepseek-ai/deepseek-r1-distill-qwen-1.5b",  
+        "model": "deepseek-ai/deepseek-r1-distill-qwen-1.5b",
         "messages": [
             {
             "role": "system",
@@ -178,33 +191,42 @@ def summarize_with_DeepSeek_R1_runpod(text):
                 
             ),
             },
-            {
-    "role": "user",
-    "content": text
-        }   
-
+            {"role": "user", "content": text}
         ],
         "temperature": 0.3,
-        "max_tokens": (MAX_SUMMARY_TOKENS * 4), # ← use global cap plus some buffer for DeepSeek-R1 thinking tokens
-        "presence_penalty": 0.1,
+        "max_tokens": MAX_SUMMARY_TOKENS * 4,    # Allowing buffer for internal reasoning tokens of DeepSeek-R1
+        "presence_penalty": 0.1                  # Discourage repetition
     }
 
     try:
+        # Executing the POST request with a 120-second timeout
         response = requests.post(url, headers=headers, json=data, timeout=120)
         response.raise_for_status()
+
+        # Parsing JSON response and extracting the assistant's message content
         result = response.json()
-        content = result['choices'][0]['message']['content']
-        summary_start = content.find('</think>\n\n') + len('</think>\n\n')
-        summary_text = content[summary_start:].strip()
-        summary_text = summary_text.replace("**", "")
-        return summary_text
+        content = result["choices"][0]["message"]["content"]
+
+        # Removing internal <think> block and strip whitespace
+        marker = "</think>\n\n"
+        start = content.find(marker)
+        summary = content[start + len(marker):].strip() if start != -1 else content.strip()
+
+        # Cleaning up any bold markdown artifacts
+        return summary.replace("**", "")
+
     except requests.exceptions.RequestException as e:
+        # Logging HTTP/network errors and returning a user-friendly message
         logger.error(f"RunPod DeepSeek-R1 error: {e} – response: {getattr(response, 'text', '')}")
         return "Error: Could not generate summary using DeepSeek-R1. Please try again later."
+
     except (KeyError, IndexError) as e:
+        # Handling unexpected JSON structure
         logger.error(f"DeepSeek-R1 unexpected response format: {e}")
         return "Error: Unexpected response format from DeepSeek-R1."
-    except ValueError as e:  # JSON decoding error
+
+    except ValueError as e:
+        # Handling JSON decoding errors
         logger.error(f"DeepSeek-R1 JSON decode failed: {e}")
         return "Error: Invalid JSON response from DeepSeek-R1."
 
