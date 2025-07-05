@@ -87,45 +87,68 @@ def summarize_text(text, model_name):
     return summary
 
 def summarize_with_llama3_point_1(text: str) -> str:
-    """Summarize text using RunPod’s Llama-3.1 via the OpenAI-compatible endpoint."""
+    """
+    Summarizing text using RunPod’s Llama-3.1 via the OpenAI-compatible endpoint.
+
+    Args:
+        text (str): The input text to be summarized.
+
+    Returns:
+        str: The generated summary, or an error message on failure.
+    """
+    # Retrieving the RunPod endpoint identifier from environment variables
     runpod_llama_endpoint_id = os.getenv("LLAMA3_POINT_1_ENDPOINT_ID")
+
+    # Constructing endpoint URL for chat completions
     url = f"https://api.runpod.ai/v2/{runpod_llama_endpoint_id}/openai/v1/chat/completions"
+
+    # Preparing request headers (JSON + Bearer authorization)
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {os.getenv('RUNPOD_API_KEY')}"
     }
+
+    # Building the payload with system/user messages and generation parameters
     data = {
         "model": "meta-llama/Llama-3.1-8B-Instruct",
         "messages": [
             {
                 "role": "system",
                 "content": (
-                    "You are a military intelligence summarizer. "
-                    "Provide an accurate, concise summary of the following report, "
-                    "focusing on key facts, strategic implications, and ethical considerations. "
-                    "Return only the final summary in plain text."
+                    "You are a military intelligence analyst tasked with summarizing intelligence reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations."
+                    "Return only the final summary in plain text (Paragraph form)."
+                    "while writing summary, make sure summary should not include any markdown formatting, no lists, no headings, "
+                    "no asterisks or backticks."
                 )
             },
-            {
-                "role": "user",
-                "content": text
-            }
+            {"role": "user", "content": text}
         ],
-        "temperature": 0.3,
-        "max_tokens": MAX_SUMMARY_TOKENS,    # ← use global cap
-        "presence_penalty": 0.1
+        "temperature": 0.3,              
+        "max_tokens": MAX_SUMMARY_TOKENS, # Enforcing global summary token cap
+        "presence_penalty": 0.1           # Discourage repetitive phrases
     }
+
     try:
-        response = requests.post(url, headers=headers, json=data, timeout=90)
+        # Executing the POST request with a 120s timeout
+        response = requests.post(url, headers=headers, json=data, timeout=120)
         response.raise_for_status()
+
+        # Parsing JSON and extract the assistant’s reply
         result = response.json()
-        # extract content
         content = result["choices"][0]["message"]["content"]
+
+        # Returning the cleaned summary
         return content.strip()
+
     except requests.exceptions.RequestException as e:
-        logger.error(f"RunPod Llama-3.1 error: {e} – response: {getattr(response, 'text', '')}")
+        # Log HTTP/network errors and surface a user-friendly message
+        logger.error(
+            f"RunPod Llama-3.1 error: {e} – response: {getattr(response, 'text', '')}"
+        )
         return "Error: Could not generate summary using Llama-3.1. Please try again later."
+
     except (KeyError, IndexError):
+        # Handling unexpected or malformed API responses
         return "Error: Unexpected response format from Llama-3.1."
 
 
@@ -142,37 +165,48 @@ def summarize_with_DeepSeek_R1_runpod(text):
         "model": "deepseek-ai/deepseek-r1-distill-qwen-1.5b",  
         "messages": [
             {
+            "role": "system",
+            "content": (
+                "You are a military intelligence analyst tasked with summarizing reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations."
+                "Return only the final summary in plain text (Paragraph form)."
+                "while writing summary, make sure maximum length of summary text should be {MAX_SUMMARY_TOKENS} tokens."
+                "summary should not include any markdown formatting, no lists, no headings, "
+                "no asterisks or backticks."
+                
+                
+                
+                
+            ),
+            },
+            {
     "role": "user",
-    "content": (
-        "You are required to produce a single, clear, accurate summary of the following military intelligence report. "
-        "You have only one chance. Focus on key facts, strategic implications, and ethical considerations. "
-        "Do not respond in a conversational or reflective style. Do not say things like 'I think' or 'Let's analyze.' "
-        "Return only the final summary in plain text\n\n"
-        f"{text}"
-        
-        )
+    "content": text
         }   
 
         ],
         "temperature": 0.3,
-        "max_tokens": MAX_SUMMARY_TOKENS,    # ← use global cap
+        "max_tokens": (MAX_SUMMARY_TOKENS * 4), # ← use global cap plus some buffer for DeepSeek-R1 thinking tokens
         "presence_penalty": 0.1,
     }
 
     try:
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=120)
         response.raise_for_status()
-        result = response.json()  
-        # Extracting the summary content
+        result = response.json()
         content = result['choices'][0]['message']['content']
-        summary_start = content.find('</think>\n\n') + len('</think>\n\n')  # Find where the summary starts
-        summary = content[summary_start:].strip()  # Get the rest of the content after that point
-        # Log the extracted summary
-        return summary
+        summary_start = content.find('</think>\n\n') + len('</think>\n\n')
+        summary_text = content[summary_start:].strip()
+        summary_text = summary_text.replace("**", "")
+        return summary_text
     except requests.exceptions.RequestException as e:
-        return "Error: Could not generate summary using DeepSeek-R1.Some times initialization of the Gpu at RunPod takes time. Please try again after some time."
-    except KeyError as e:
-        return "Error: Unexpected response format from model."
+        logger.error(f"RunPod DeepSeek-R1 error: {e} – response: {getattr(response, 'text', '')}")
+        return "Error: Could not generate summary using DeepSeek-R1. Please try again later."
+    except (KeyError, IndexError) as e:
+        logger.error(f"DeepSeek-R1 unexpected response format: {e}")
+        return "Error: Unexpected response format from DeepSeek-R1."
+    except ValueError as e:  # JSON decoding error
+        logger.error(f"DeepSeek-R1 JSON decode failed: {e}")
+        return "Error: Invalid JSON response from DeepSeek-R1."
 
 
 def summarize_with_gpt_4point1(text):
@@ -195,7 +229,7 @@ def summarize_with_gpt_4point1(text):
                 },
                 {
                     "role": "user",
-                    "content": f"Summarize this report and return only summary plain text. Here is report text:\n\n{text}"
+                    "content": f"Summarize this report and return only summary in plain text. Here is report text:\n\n{text}"
                 }
             ],
             max_tokens=MAX_SUMMARY_TOKENS,      # ← use global cap
