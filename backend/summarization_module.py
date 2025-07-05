@@ -270,23 +270,37 @@ def summarize_with_gpt_4point1(text):
         return f"Error: Could not generate GPT-4.1 summary. {str(e)}"
 
 def summarize_with_claude_sonnet_3_7(text: str) -> str:
-    """Summarizing text using Claude Sonnet 3.7 via the anthropic Python client."""
+    """
+    Summarize text using Anthropic Claude Sonnet 3.7 via the anthropic Python client.
+
+    Args:
+        text (str): The input report or document to summarize.
+
+    Returns:
+        str: The summary produced by Claude Sonnet 3.7 or an error message.
+    """
+    # Initializing the Anthropic client with API key from environment variables
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     try:
+        # Sending a request to Claude Sonnet 3.7 with system instructions and user content
         response = client.messages.create(
             model="claude-3-7-sonnet-20250219",
             system=(
-                "You are a military intelligence analyst tasked with summarizing reports. "
-                "Provide accurate, concise summaries focusing on key facts, strategic implications, "
-                "and ethical considerations. Return only the final summary in plain text."
+                "You are a military intelligence analyst tasked with summarizing reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations."
+                "Return only the final summary in plain text (Paragraph form)."
+                "while writing summary, make sure summary should not include any markdown formatting, no lists, no headings, "
+                "no asterisks or backticks."
             ),
             messages=[{"role": "user", "content": text}],
-            max_tokens=MAX_SUMMARY_TOKENS,
+            max_tokens=MAX_SUMMARY_TOKENS,  # Global Cap the summary length in tokens
             temperature=0.3,
         )
+        # Extracting the generated summary text and trim whitespace
         summarize_text = response.content[0].text.strip()
         return summarize_text
+
     except Exception as e:
+        # Logging the error for debugging and returning a user-friendly message
         logger.error(f"Claude Sonnet 3.7 (anthropic) summarization failed: {e}")
         return f"Error: Could not generate summary using Claude Sonnet 3.7. {e}"
 

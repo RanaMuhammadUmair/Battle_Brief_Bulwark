@@ -80,8 +80,6 @@ def evaluate_with_mistral_small(source_text: str, summary_text: str) -> Dict[str
 
         # Extract and trim the raw text response
         raw = resp.choices[0].message.content.strip()
-        print(f"Raw Mistral response (attempt {attempts}): {raw}")
-
         # Remove potential Markdown code fences around the JSON
         raw_clean = re.sub(r'^```(?:json)?\s*', '', raw)
         raw_clean = re.sub(r'\s*```$', '', raw_clean).strip()
