@@ -238,10 +238,11 @@ def summarize_with_gpt_4point1(text):
     Returns:
         str: The summarized text.
     """
-    # Loading the OpenAI API key from environment variables
+    # Initializing the OpenAI API client using the key from environment variables
     openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
     try:
-        # Sending a prompt to the OpenAI API with system and user role messages:
+        # Creating a chat completion request to GPT-4.1 with system and user messages
         response = openai_client.chat.completions.create(
             model="gpt-4.1",
             messages=[
@@ -251,21 +252,25 @@ def summarize_with_gpt_4point1(text):
                 },
                 {
                     "role": "user",
-                    "content": f"Summarize this report and return only summary in plain text. Here is report text:\n\n{text}"
+                    "content": (
+                        f"Summarize this report and return only the summary in plain text. "
+                        f"Here is report text:\n\n{text}"
+                    )
                 }
             ],
-            max_tokens=MAX_SUMMARY_TOKENS,      # ← use global cap
-            temperature=0.3,
+            max_tokens=MAX_SUMMARY_TOKENS,  # Enforcing token cap for summary length
+            temperature=0.3,           
         )
-        # Extracting and returning summary from the response
+        # Extracting and returning the generated summary from the API response
         return response.choices[0].message.content
+
     except Exception as e:
-        # Handling any exceptions during the API call
+        # Logging the exception and returning a user-friendly error message
         print(f"GPT-4.1 summarization failed: {type(e).__name__}: {e}")
         return f"Error: Could not generate GPT-4.1 summary. {str(e)}"
 
 def summarize_with_claude_sonnet_3_7(text: str) -> str:
-    """Summarize text using Claude Sonnet 3.7 via the anthropic Python client."""
+    """Summarizing text using Claude Sonnet 3.7 via the anthropic Python client."""
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     try:
         response = client.messages.create(
