@@ -249,13 +249,13 @@ def summarize_with_gpt_4point1(text):
                 {
                     "role": "system",
                     "content": "You are a military intelligence analyst tasked with summarizing reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations."
+                    "Return only the final summary in plain text (Paragraph form)."
+                    "while writing summary, make sure summary should not include any markdown formatting, no lists, no headings, "
+                    "no asterisks or backticks."
                 },
                 {
                     "role": "user",
-                    "content": (
-                        f"Summarize this report and return only the summary in plain text. "
-                        f"Here is report text:\n\n{text}"
-                    )
+                    "content": text
                 }
             ],
             max_tokens=MAX_SUMMARY_TOKENS,  # Enforcing token cap for summary length
@@ -400,13 +400,14 @@ def summarize_with_grok_3(text: str) -> str:
     Returns:
         str: A concise, plain-text summary.
     """
-
+    # Initializing Grok client with XAI API key and custom base URL
     grok_client = OpenAI(
         api_key=os.getenv("XAI_API_KEY"),
         base_url="https://api.x.ai/v1",
     )
 
     try:
+        # Building and sending chat completion request
         response = grok_client.chat.completions.create(
             model="grok-3-latest",
             messages=[
@@ -414,24 +415,27 @@ def summarize_with_grok_3(text: str) -> str:
                     "role": "system",
                     "content": (
                         "You are a military intelligence analyst tasked with summarizing reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations. "
+                        "Return only the final summary in plain text (Paragraph form)."
+                        "while writing summary, make sure summary should not include any markdown formatting, no lists, no headings, "
+                        "no asterisks or backticks."
                 
                     ),
                 },
                 {
                     "role": "user",
-                    "content": (
-                        "Summarize this report and output *only* the summary "
-                        "as plain text:\n\n" + text
-                    ),
+                    "content": text,
                 },
             ],
-            max_tokens=MAX_SUMMARY_TOKENS,
+            max_tokens=MAX_SUMMARY_TOKENS,  # enforcing global token cap for summary
             temperature=0.3,
-            stream=False,     
+            stream=False,                  # disabling streaming mode
         )
+
+        # Extracting the assistant’s reply and trim whitespace
         return response.choices[0].message.content.strip()
 
     except Exception as e:
+        # Printing error detail and return user‐friendly message
         print(f"Grok-3 summarization failed: {type(e).__name__}: {e}")
         return f"Error: Could not generate Grok-3 summary. {e}"
 
