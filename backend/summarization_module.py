@@ -305,63 +305,189 @@ def summarize_with_claude_sonnet_3_7(text: str) -> str:
         return f"Error: Could not generate summary using Claude Sonnet 3.7. {e}"
 
 
-def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, chunk_overlap=50,
-                        chunk_max_length=500, chunk_min_length=50, final_max_length=500,  # ← default to cap
-                        final_min_length=100):
+
+
+
+def summarize_with_bart(text, model_name="facebook/bart-large-cnn", max_input_tokens=1024, 
+                        chunk_overlap=150, chunk_max_length=200, chunk_min_length=50,
+                        final_max_length=MAX_SUMMARY_TOKENS, final_min_length=150):
     """
-    Summarize long text using BART with token-based chunking and hierarchical summarization.
-    Allows longer summaries by increasing max_length during generation.
+    Summarize text using Facebook's BART (Bidirectional and Auto-Regressive Transformers) model.
+    
+    This function handles both short and long texts by implementing a chunking strategy for 
+    texts that exceed the model's input token limit. For long texts, it processes overlapping
+    chunks and then performs hierarchical summarization to produce a final coherent summary.
+    
+    Args:
+        text (str): Input text to be summarized
+        model_name (str): HuggingFace model identifier for BART variant
+        max_input_tokens (int): Maximum tokens per chunk for model processing
+        chunk_overlap (int): Number of overlapping tokens between consecutive chunks
+        chunk_max_length (int): Maximum length for individual chunk summaries
+        chunk_min_length (int): Minimum length for individual chunk summaries
+        final_max_length (int): Maximum length for the final consolidated summary
+        final_min_length (int): Minimum length for the final consolidated summary
+        
+    Returns:
+        str: Generated summary text or error message if processing fails
     """
-    text= "[INSTRUCTION BEGIN] " \
-    "Summarize the following report with ethical considerations" \
-    "[Report begins]" + text
-    # Initialize tokenizer and model
-    tokenizer = BartTokenizer.from_pretrained(model_name)
-    model = BartForConditionalGeneration.from_pretrained(model_name)
+    try:
+        # Initialize BART model and tokenizer with optimal device allocation
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        tokenizer = BartTokenizer.from_pretrained(model_name)
+        model = BartForConditionalGeneration.from_pretrained(model_name).to(device)
+        model.eval()  # Set to evaluation mode for inference optimization
+        
+        # Tokenize input text while preserving attention masks for proper model processing
+        inputs = tokenizer(text, return_tensors="pt", truncation=False, 
+                          add_special_tokens=True, return_attention_mask=True)
+        input_ids = inputs["input_ids"][0]
+        attention_mask = inputs["attention_mask"][0]
+        
+        # Handle short texts that fit within model's input capacity directly
+        if len(input_ids) <= max_input_tokens:
+            # Process entire text in single pass for optimal coherence
+            input_batch = input_ids.unsqueeze(0).to(device)
+            attention_batch = attention_mask.unsqueeze(0).to(device)
+            
+            # Generate summary with memory-efficient context management
+            with torch.no_grad():
+                summary_ids = model.generate(
+                    input_batch,
+                    attention_mask=attention_batch,
+                    max_length=min(final_max_length, len(input_ids) // 2),  # Adaptive max length based on input size
+                    min_length=max(final_min_length, len(input_ids) // 8),  # Adaptive min length for proportional summarization
+                    length_penalty=1.0,      # Balanced penalty to avoid overly short/long outputs
+                    num_beams=4,             # Beam search for higher quality generation
+                    no_repeat_ngram_size=3,  # Prevent repetitive phrase generation
+                    repetition_penalty=1.2,  # Mild penalty for repetition while maintaining coherence
+                    early_stopping=True,     # Stop generation when optimal summary is found
+                    do_sample=False          # Deterministic output for consistent results
+                )
+            
+            # Decode and return the generated summary
+            summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+            return summary.strip()
+        
+        # Calculate optimal chunking strategy for long texts
+        # Distribute input tokens evenly across chunks to maintain context balance
+        num_chunks = (len(input_ids) + max_input_tokens - 1) // max_input_tokens
+        optimal_chunk_size = len(input_ids) // num_chunks if num_chunks > 1 else max_input_tokens
+        
+        # Create overlapping text chunks with preserved attention masks
+        chunks = []
+        attention_chunks = []
+        start = 0
+        
+        # Implement intelligent chunking with sentence boundary awareness
+        while start < len(input_ids):
+            end = min(start + optimal_chunk_size, len(input_ids))
+            
+            # Attempt to break chunks at sentence boundaries to preserve semantic coherence
+            if end < len(input_ids) and start > 0:
+                # Search for sentence-ending punctuation within reasonable proximity
+                search_start = max(end - 50, start + optimal_chunk_size // 2)
+                period_positions = [i for i in range(search_start, end) 
+                                  if tokenizer.decode([input_ids[i]]).strip() in '.!?']
+                if period_positions:
+                    end = period_positions[-1] + 1  # Include the punctuation token
+            
+            # Store chunk and corresponding attention mask
+            chunks.append(input_ids[start:end])
+            attention_chunks.append(attention_mask[start:end])
+            
+            # Check for completion of input processing
+            if end == len(input_ids):
+                break
+            start = end - chunk_overlap  # Maintain context continuity with overlap
+        
+        # Process individual chunks with robust error handling
+        summaries = []
+        for i, (chunk, attn_chunk) in enumerate(zip(chunks, attention_chunks)):
+            try:
+                # Prepare chunk tensors for GPU/CPU processing
+                input_batch = chunk.unsqueeze(0).to(device)
+                attention_batch = attn_chunk.unsqueeze(0).to(device)
+                
+                # Generate summary for current chunk with optimized parameters
+                with torch.no_grad():
+                    summary_ids = model.generate(
+                        input_batch,
+                        attention_mask=attention_batch,
+                        max_length=chunk_max_length,    # Consistent chunk summary length
+                        min_length=chunk_min_length,    # Ensure meaningful content in each summary
+                        length_penalty=1.0,             # Balanced length optimization
+                        num_beams=3,                    # Reduced beam size for processing speed
+                        no_repeat_ngram_size=3,         # Prevent repetitive content
+                        repetition_penalty=1.2,         # Encourage diverse vocabulary usage
+                        early_stopping=True,            # Optimize generation efficiency
+                        do_sample=False                 # Deterministic chunk processing
+                    )
+                
+                # Decode chunk summary and add to collection
+                summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+                summaries.append(summary.strip())
+            
+                
+            except Exception as e:
+                # Log chunk processing errors but continue with remaining chunks
+                logger.error(f"Error processing chunk {i+1}: {e}")
+                continue
+        
+        # Validate that at least some chunks were processed successfully
+        if not summaries:
+            return "Error: Failed to process any text chunks with BART."
+        
+        # Consolidate individual chunk summaries into coherent final summary
+        combined_summary = " ".join(summaries)
+        
+        # Check if combined summary is within acceptable length limits
+        combined_tokens = tokenizer(combined_summary, return_tensors="pt")["input_ids"]
+        if len(combined_tokens[0]) <= final_max_length:
+            return combined_summary
+        
+        # Perform hierarchical summarization when combined summary exceeds limits
+        # Truncate combined summary to model's input capacity if necessary
+        final_inputs = tokenizer(combined_summary, return_tensors="pt", 
+                               truncation=True, max_length=max_input_tokens,
+                               return_attention_mask=True)
+        
+        # Prepare final summarization batch tensors
+        input_batch = final_inputs["input_ids"].to(device)
+        attention_batch = final_inputs["attention_mask"].to(device)
+        
+        # Generate final consolidated summary with enhanced quality parameters
+        with torch.no_grad():
+            summary_ids = model.generate(
+                input_batch,
+                attention_mask=attention_batch,
+                max_length=final_max_length,        # Global summary length constraint
+                min_length=final_min_length,        # Ensure comprehensive coverage
+                length_penalty=1.0,                 # Balanced output length optimization
+                num_beams=4,                        # Higher quality for final summary
+                no_repeat_ngram_size=3,             # Prevent repetitive final content
+                repetition_penalty=1.2,             # Encourage vocabulary diversity
+                early_stopping=True,                # Efficient generation termination
+                do_sample=False                     # Consistent final output
+            )
+        
+        # Decode and return the final hierarchical summary
+        final_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+        return final_summary.strip()
     
-    # Tokenize the input text
-    inputs = tokenizer(text, return_tensors="pt", truncation=False)
-    input_ids = inputs["input_ids"][0]
+    except Exception as e:
+        # Log comprehensive error information for debugging
+        logger.error(f"BART summarization failed: {e}")
+        return f"Error: Could not generate summary using BART. {str(e)}"
     
-    # Split into overlapping chunks
-    chunks = []
-    start = 0
-    while start < len(input_ids):
-        end = min(start + max_input_tokens, len(input_ids))
-        chunks.append(input_ids[start:end])
-        if end == len(input_ids):
-            break
-        start += max_input_tokens - chunk_overlap  # Move start point with overlap
-    
-    # Generate summaries for each chunk
-    summaries = []
-    for chunk in chunks:
-        input_chunk = chunk.unsqueeze(0)  # Add batch dimension
-        summary_ids = model.generate(
-            input_chunk,
-            max_length=chunk_max_length,
-            min_length=chunk_min_length,
-            length_penalty=2.0,
-            num_beams=4,
-            early_stopping=True
-        )
-        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-        summaries.append(summary)
-    
-    # Combine summaries and perform hierarchical summarization
-    combined_summary = " ".join(summaries)
-    inputs = tokenizer(combined_summary, return_tensors="pt", truncation=True, max_length=max_input_tokens)
-    summary_ids = model.generate(
-        inputs["input_ids"],
-        max_length=final_max_length,
-        min_length=final_min_length,
-        length_penalty=2.0,
-        num_beams=4,
-        early_stopping=True
-    )
-    final_summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-    
-    return final_summary
+    finally:
+        # Perform GPU memory cleanup to prevent accumulation of cached tensors
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+
+
+
 
 
     
