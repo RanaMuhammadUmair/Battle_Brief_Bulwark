@@ -501,32 +501,37 @@ def summarize_with_gemini2point5_pro(text):
     Returns:
         str: The summarized text or an error message
     """
-    # Loading the API key from environment variables
+    # Retrieving the Google Generative AI API key from environment variables
     api_key = os.getenv("GOOGLE_GENAI_API_KEY")
     model_name_to_use = "gemini-2.5-pro-preview-05-06" 
 
     try:
-        # Configuring the genai library using the imported alias
+        # Configuring the Google Generative AI library with authentication credentials
         genai.configure(api_key=api_key)
-        # --- Check if the model is available ---
+        
+        # Initializing the Gemini model instance with the specified version
         model = genai.GenerativeModel(model_name_to_use)
 
+        # Constructing the prompt with military intelligence analyst role and ethical guidelines
         prompt = (
             "You are a military intelligence analyst tasked with summarizing reports. "
             "Provide accurate summaries that capture key information while maintaining appropriate security posture and taking care of ethical considerations."
-            "Return only the final summary.\n\n"
-            "Summarize this report and return only summary plain text. Here is report text:\n\n" + text
+            "Summarize this report and return only summary in plain text. Here is report text:\n\n" + text
         )
-        #Generating content using the model instance
+        
+        # Generating summary content using the Gemini model with the constructed prompt
         response = model.generate_content(prompt)
-        #Handling Response
+        
+        # Validating response structure and extracting summary text
         if response and hasattr(response, 'text') and response.text:
-             print(f"Gemini response: {response.text}")
+             # Returning the cleaned summary with whitespace trimmed
              return response.text.strip()
+             
     except Exception as e:
-        # Catch potential errors
-        if hasattr(e, 'message'):
-             error_details = e.message
+        # Extracting detailed error information when available for better debugging
+        error_details = e.message if hasattr(e, 'message') else str(e)
+        
+        # Returning user-friendly error message with technical details
         return f"Error: Could not generate summary using Gemini API. Details: {error_details}"
 
 
