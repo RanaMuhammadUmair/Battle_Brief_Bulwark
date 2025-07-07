@@ -591,19 +591,29 @@ def summarize_with_grok_3(text: str) -> str:
 
 def summarize_with_mistral_small(text: str) -> str:
     """
-    Summarize *text* with Mistral’s `mistral-small` model.
+    Summarize text using Mistral AI's small model via their Python SDK.
+
+    This function connects to Mistral's API to generate concise summaries of military
+    intelligence reports while maintaining security posture and ethical considerations.
+    The function uses the 'mistral-small-latest' model with controlled generation
+    parameters to ensure consistent, high-quality summaries.
 
     Args:
-        text (str): Raw report text.
-    Returns:
-        str: Concise plain-text summary.
-    """
+        text (str): The input report or document text to be summarized.
 
+    Returns:
+        str: A plain-text summary without markdown formatting, or an error message
+             if the summarization process fails.
+    """
+    # Initializing Mistral client with API key from environment variables
     client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
+
+    # Validating client initialization to prevent downstream errors
     if not client:
         return "Error: Mistral client initialization failed. Please check your API key."
 
     try:
+        # Sending chat completion request to Mistral's small model
         response = client.chat.complete(
             model="mistral-small-latest",
             messages=[
@@ -611,23 +621,24 @@ def summarize_with_mistral_small(text: str) -> str:
                     "role": "system",
                     "content": (
                         "You are a military intelligence analyst tasked with summarizing reports. Provide accurate summaries that capture key information while maintaining appropriate security posture and take care of ethical considerations. "
+                        "Return only the final summary in plain text (Paragraph form)."
+                        "while writing summary, make sure summary should not include any markdown formatting, no lists, no headings, "
+                        "no asterisks or backticks."
                     ),
                 },
                 {
                     "role": "user",
-                    "content": (
-                        "Summarize this report and output only summary plain text:\n\n" + text
-                    ),
+                    "content": text
                 },
             ],
-            max_tokens=MAX_SUMMARY_TOKENS,
-            temperature=0.3,
-            stream=False,
+            max_tokens=MAX_SUMMARY_TOKENS,  # Enforce global token limit for consistency
+            temperature=0.3,              
+            stream=False,                   # Disable streaming for complete response handling
         )
+
+        # Extracting and returning the generated summary with whitespace trimmed
         return response.choices[0].message.content.strip()
 
     except Exception as e:
-        print(f"Mistral summarization failed: {type(e).__name__}: {e}")
+        # Returning user-friendly error message with technical details
         return f"Error: Could not generate Mistral summary. {e}"
-
-
