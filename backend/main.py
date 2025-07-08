@@ -1,14 +1,32 @@
+# --------------------------------------------------------------------------------
+# Main module for the NATO LLM Summarizer backend service.
+#
+# Responsibilities:
+#  - Load configuration from environment
+#  - Initialize and configure logging, database, and middleware
+#  - Expose endpoints to:
+#       * Upload and summarize documents
+#       * Evaluate summary quality and toxicity
+#       * Persist and manage summaries per user
+#
+# --------------------------------------------------------------------------------
+
 import logging
 from dotenv import load_dotenv  
+# Load environment variables from .env for API keys, DB settings, etc.
 load_dotenv()
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import tempfile
+
+# Utility modules for text extraction, summarization, and persistence
 from utils import extract_text_from_file
 from summarization_module import summarize_text
 from db import Database
-from typing import List
+
+# Third-party processing libraries
 from tika import parser
 from auth import router as auth_router
 from users_db import initialize_db
@@ -16,24 +34,30 @@ from detoxify import Detoxify
 from evaluation_module import evaluate_with_mistral_small
 
 
-
-# Configure logging
+# --------------------------------------------------------------------------------
+# Configure logging: output to console and to 'app.log' for later inspection
+# --------------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(),  # Console handler
-        logging.FileHandler('app.log')  # File handler
+        logging.StreamHandler(),
+        logging.FileHandler('app.log')
     ]
 )
 logger = logging.getLogger(__name__)
 
-# Initialize the users DB (create table if not exists)
+
+# --------------------------------------------------------------------------------
+# Initialize user database schema (creates tables if not present)
+# --------------------------------------------------------------------------------
 initialize_db()
 
-app = FastAPI()
 
-# Allow frontend to communicate with backend
+# --------------------------------------------------------------------------------
+# Create FastAPI app and allow all CORS origins during development
+# --------------------------------------------------------------------------------
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -41,22 +65,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize database
+
+# --------------------------------------------------------------------------------
+# Instantiate the persistence layer for summaries
+# --------------------------------------------------------------------------------
 db = Database()
 
-# Supported file types
+
+# --------------------------------------------------------------------------------
+# Supported file extensions for upload validation
+# --------------------------------------------------------------------------------
 SUPPORTED_FILE_TYPES = [".txt", ".pdf", ".docx"]
 
-# load models
+
+# --------------------------------------------------------------------------------
+# Load the Detoxify model to assess toxicity in original reports & summaries
+# --------------------------------------------------------------------------------
 detox_model = Detoxify('unbiased')
 
+
 def handle_uploaded_file(file: UploadFile) -> str:
-    """Save uploaded file temporarily and return its path"""
+    """
+    Persist an uploaded file to a temporary location on disk.
+
+    Returns:
+        The filesystem path to the temporary file.
+    """
     logger.info(f"Handling uploaded file: {file.filename}")
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         content = file.file.read()
         temp_file.write(content)
         return temp_file.name
+
 
 @app.post("/summarize")
 async def summarize(
@@ -65,13 +105,20 @@ async def summarize(
     model: str = Form(...)
 ):
     """
-    Upload one or more files and summarize their content.
+    Endpoint to process one or more uploaded files:
+      1. Validate file types and word count limits.
+      2. Extract plaintext via Apache Tika.
+      3. Generate a summary with the specified LLM.
+      4. Evaluate summary quality with Mistral and toxicity with Detoxify.
+      5. Compute toxicity reduction percentages.
+      6. Store the summary and metadata in the database.
     """
     logger.info(f"Received summarization request for user: {user_id} with model: {model}")
     summaries = {}
+
     for file in files:
-        logger.info(f"Received summarization request for file: {file.filename} using model: {model}")
-        
+        logger.info(f"Processing file: {file.filename}")
+        # Validate supported file types
         if not any(file.filename.endswith(ext) for ext in SUPPORTED_FILE_TYPES):
             logger.error(f"Unsupported file type: {file.filename}")
             summaries[file.filename] = "file not supported"
@@ -79,102 +126,86 @@ async def summarize(
 
         temp_path = handle_uploaded_file(file)
         try:
+            # Extract and sanitize text
             logger.info(f"Extracting text from file {file.filename}...")
             plain_text = parser.from_file(temp_path).get('content').strip()
 
-            # enforce 1500-word limit
+            # Enforce word count limit (max ~1500 words)
             word_count = len(plain_text.split())
             if word_count > 1500:
                 raise Exception(
-                    f"Current system is designed to process maximum 3 pages (1500 words ~ 2000 tokens) long report. Your file contains {word_count} words."
-                    "Please contact administrator to increase the limit."
+                    f"Document exceeds 1500-word limit ({word_count} words). "
+                    "Please contact the administrator to increase the limit."
                 )
 
-            logger.info(f"Extracted text length: {len(plain_text)} characters and {word_count} words for file: {file.filename}")
-
-            logger.info(f"Generating summary using {model} model for file: {file.filename}...")
+            # Generate summary and evaluate quality & toxicity
+            logger.info(f"Generating summary using {model} model...")
             summary = summarize_text(plain_text, model)
-
-            # new: run Mistral quality judge
             quality_scores = evaluate_with_mistral_small(plain_text, summary)
-            print(f"Quality scores for {file.filename}: {quality_scores}")
+            summary_scores = {k: float(v) for k, v in detox_model.predict(summary).items()}
+            report_scores  = {k: float(v) for k, v in detox_model.predict(plain_text).items()}
 
-            # run Detoxify as before
-            summary_scores = detox_model.predict(summary)
-            summary_scores = {label: float(score) for label, score in summary_scores.items()}
-            # compute overall average for summary
-            overall_summary = sum(summary_scores.values()) / len(summary_scores)
-            summary_scores["overall"] = overall_summary
-
-            # run Detoxify on the original report text
-            report_scores = detox_model.predict(plain_text)
-            report_scores = {label: float(score) for label, score in report_scores.items()}
-            # compute overall average for report
-            overall_report = sum(report_scores.values()) / len(report_scores)
-            report_scores["overall"] = overall_report
-
-            # calculate percentage reduction relative to report = 100%
+            # Compute overall toxicity scores and reduction percentages
+            summary_scores["overall"] = sum(summary_scores.values()) / len(summary_scores)
+            report_scores["overall"]  = sum(report_scores.values())  / len(report_scores)
             percentage_reduction = {
-                label: (
-                    (report_scores[label] - summary_scores[label])
-                    / report_scores[label]
-                    * 100
-                ) if report_scores[label] > 0 else 0.0
+                label: ((report_scores[label] - summary_scores[label]) / report_scores[label] * 100)
+                           if report_scores[label] > 0 else 0.0
                 for label in report_scores
             }
 
+            # Persist results and prepare response payload
             metadata = {
-               "filename":      file.filename,
-               "model":         model,
-               "detox_summary": summary_scores,
-               "detox_report":  report_scores,
-               "percentage_reduction": percentage_reduction,
-               "quality_scores": quality_scores,
-             }
-            
-            db.save_summary(user_id, plain_text, summary, metadata)
-            logger.info(f"Summary saved to database for user: {user_id} and file: {file.filename}")
-
-            # return both summary & metadata so the frontend can render the card
-            summaries[file.filename] = {
-                "summary": summary,
-                "metadata": metadata
+                "filename": file.filename,
+                "model": model,
+                "detox_summary": summary_scores,
+                "detox_report": report_scores,
+                "percentage_reduction": percentage_reduction,
+                "quality_scores": quality_scores,
             }
+            db.save_summary(user_id, plain_text, summary, metadata)
+            logger.info(f"Saved summary for user={user_id}, file={file.filename}")
+
+            summaries[file.filename] = {"summary": summary, "metadata": metadata}
 
         except Exception as e:
-            logger.error(f"Error processing file {file.filename}: {str(e)}")
-            summaries[file.filename] = f"Error processing file: {str(e)}"
+            logger.error(f"Error processing {file.filename}: {e}")
+            summaries[file.filename] = f"Error: {e}"
+
         finally:
             os.unlink(temp_path)
-            
-    # Return the live summaries so the frontend can display them immediately.
+
     return summaries
+
 
 @app.get("/summaries")
 async def get_summaries(user: str):
     """
-    Retrieve stored summaries for a given user.
+    Retrieve all stored summaries for a given user.
     """
     try:
-        user_summaries = db.get_summaries_for_user(user)
-        return {"summaries": user_summaries}
+        return {"summaries": db.get_summaries_for_user(user)}
     except Exception as e:
-        logger.error(f"Error retrieving summaries for user {user}: {str(e)}")
+        logger.error(f"Failed to fetch summaries for user={user}: {e}")
         return {"summaries": []}
+
 
 @app.delete("/summaries/{summary_id}")
 async def delete_summary_route(summary_id: int):
     """
-    Delete a stored summary by its ID.
+    Delete a summary record by its database ID.
     """
     try:
         db.delete_summary(summary_id)
         return {"deleted": summary_id}
     except Exception as e:
-        logger.error(f"Error deleting summary {summary_id}: {e}")
+        logger.error(f"Failed to delete summary id={summary_id}: {e}")
         raise HTTPException(status_code=500, detail="Could not delete summary")
 
+
+# Include authentication routes (login, signup, token management)
 app.include_router(auth_router)
+
 
 if __name__ == "__main__":
     import uvicorn
