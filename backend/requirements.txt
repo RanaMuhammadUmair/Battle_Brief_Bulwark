@@ -12,7 +12,7 @@ python-jose==3.4.0
 passlib
 pydantic
 accelerate
-tika
+tika==2.6.0
 runpod==1.7.9
 ecdsa>=0.17.0
 passlib[bcrypt]
@@ -22,4 +22,5 @@ mistralai
 evaluate
 rouge_score
 absl-py
+google.generativeai
 pytorch-lightning>=1.7.7,<3
