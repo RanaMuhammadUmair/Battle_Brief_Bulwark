@@ -21,8 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import tempfile
 
-# Utility modules for text extraction, summarization, and persistence
-from utils import extract_text_from_file
+# Utility modules for summarization, and persistence
 from summarization_module import summarize_text
 from db import Database
 

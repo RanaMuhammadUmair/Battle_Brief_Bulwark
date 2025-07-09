@@ -360,7 +360,15 @@ const BattleBriefBulwark = ({ user }) => {
         />
 
         {/* ← your existing Autocomplete */}
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",  // was "center"
+            // you can add a little left padding if you want:
+             pr: 32
+          }}
+        >
           <Autocomplete
             freeSolo
             disableOpenOnFocus
@@ -396,11 +404,12 @@ const BattleBriefBulwark = ({ user }) => {
 
         <Box sx={{ display: "flex", alignItems: "center", pr: 4, gap: 2 }}>
           <Button
+          
             onClick={handleUserMenuOpen}
             endIcon={<ExpandMoreIcon />}
             sx={{ textTransform: "none" }}
           >
-            <Avatar sx={{ width: 32, height: 32, mr: 1 }}>
+            <Avatar sx={{ width: 32, height: 32, mr: 1,bgcolor: "primary.main",color: "#fff" }}>
               {user.username[0].toUpperCase()}
             </Avatar>
             {user.username}
@@ -418,6 +427,7 @@ const BattleBriefBulwark = ({ user }) => {
                 handleUserMenuClose();
                 handleLogout();
               }}
+              sx={{ color: "primary.main" }}
             >
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />
@@ -805,6 +815,8 @@ const BattleBriefBulwark = ({ user }) => {
                         ? '0 10px 20px rgba(196, 255, 3, 0.58)'
                         : 'none',
                     transition: 'box-shadow 0.2s ease',
+                    aspectRatio: '1.18 / 1',        // ← force a square
+                    overflow: 'hidden',          // optional, keeps contents contained
                     '@keyframes vibrate': {
                       "0%":   { transform: "translate(0)" },
                       "20%":  { transform: "translate(-2px, 2px)" },
