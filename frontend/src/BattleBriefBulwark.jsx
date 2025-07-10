@@ -783,70 +783,75 @@ const BattleBriefBulwark = ({ user }) => {
         <Paper elevation={3} sx={{ flex: 1, p: 4 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Select Model</Typography>
 
-          <Grid
-            container
-            spacing={2}
-            wrap="nowrap"                // ← prevent wrapping so it’s always 1 row
-            sx={{ mb: 3, width: '100%' }} 
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              mb: 3,
+              width: '100%',
+              gridTemplateColumns: {
+                xs: 'repeat(1, 1fr)',  // zoomed in / very narrow
+                sm: 'repeat(2, 1fr)',  // mobile / small
+                md: 'repeat(4, 1fr)',  // tablet / medium
+                lg: 'repeat(8, 1fr)'   // desktop / large
+              }
+            }}
           >
             {modelOptions.map(opt => (
-              <Grid
-                item
+              <Box
                 key={opt.value}
-                sx={{ flexGrow: 1, display: 'flex' }}   // ← each item flex-grows equally
+                onClick={() => setModel(opt.value)}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 2,
+                  border: 1,
+                  borderColor: model === opt.value ? 'primary.main' : 'grey.300',
+                  borderRadius: 1,
+                  cursor: 'pointer',
+                  backgroundColor: model === opt.value ? 'primary.light' : 'background.paper',
+                  boxShadow: model === opt.value
+                    ? '0 10px 20px rgba(196,255,3,0.58)'
+                    : 'none',
+                  transition: 'box-shadow 0.2s ease',
+                  aspectRatio: '1.2 / 1',
+                  overflow: 'hidden',
+
+                  // ← define your vibrate keyframes inline
+                  '@keyframes vibrate': {
+                    '0%':   { transform: 'translate(0)' },
+                    '20%':  { transform: 'translate(-2px, 2px)' },
+                    '40%':  { transform: 'translate(-2px, -2px)' },
+                    '60%':  { transform: 'translate(2px, 2px)' },
+                    '80%':  { transform: 'translate(2px, -2px)' },
+                    '100%': { transform: 'translate(0)' }
+                  },
+
+                  // ← hook animation to your loading flag
+                  animation: loading && model === opt.value
+                    ? 'vibrate 0.9s linear infinite'
+                    : 'none',
+                }}
               >
                 <Box
-                  onClick={() => setModel(opt.value)}
+                  component="img"
+                  src={opt.logo}
+                  alt={opt.name}
+                  sx={{ width: '100%', height: 'auto', maxHeight: 160 }}
+                />
+                <Typography
                   sx={{
-                    flex: 1,            // fill that Grid slot
-                    minWidth: 0,        // allow content to shrink
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    p: 2,
-                    border: 1,
-                    borderColor: model === opt.value ? 'primary.main' : 'grey.300',
-                    borderRadius: 1,
-                    cursor: 'pointer',
-                    backgroundColor:
-                      model === opt.value ? 'primary.light' : 'background.paper',
-                    boxShadow:
-                      model === opt.value
-                        ? '0 10px 20px rgba(196, 255, 3, 0.58)'
-                        : 'none',
-                    transition: 'box-shadow 0.2s ease',
-                    aspectRatio: '1.18 / 1',        // ← force a square
-                    overflow: 'hidden',          // optional, keeps contents contained
-                    '@keyframes vibrate': {
-                      "0%":   { transform: "translate(0)" },
-                      "20%":  { transform: "translate(-2px, 2px)" },
-                      "40%":  { transform: "translate(-2px, -2px)" },
-                      "60%":  { transform: "translate(2px, 2px)" },
-                      "80%":  { transform: "translate(2px, -2px)" },
-                      "100%": { transform: "translate(0)" }
-                    },
-                    animation:
-                      loading && model === opt.value
-                        ? 'vibrate 0.9s linear infinite'
-                        : 'none'
+                    textAlign: 'center',
+                    wordBreak: 'break-word'
                   }}
                 >
-                  <img
-                    src={opt.logo}
-                    alt={opt.name}
-                    style={{
-                      width: '100%',    // ← always fill available width
-                      height: 'auto',
-                      maxHeight: 160    // cap the height
-                    }}
-                  />
-                  <Typography sx={{ mt: 1, textAlign: 'center' }}>
-                    {opt.name}
-                  </Typography>
-                </Box>
-              </Grid>
+                  {opt.name}
+                </Typography>
+              </Box>
             ))}
-          </Grid>
+          </Box>
 
           <TextField
             multiline
