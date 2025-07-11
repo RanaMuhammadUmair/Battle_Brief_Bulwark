@@ -50,7 +50,7 @@ class Database:
             summary (str): Generated summary text
             metadata (dict): Additional metadata including filename
             
-        Note: Automatically enforces a limit of 120 summaries per user by removing oldest entries.
+        Note: Automatically enforces a limit of 1000 summaries per user by removing oldest entries.
         """
         # Insert new summary record
         query = """

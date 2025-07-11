@@ -5,19 +5,28 @@ import LoginPage from "./LoginPage.jsx";
 import SignUpPage from "./SignUpPage.jsx";
 import SettingPage from "./SettingPage.jsx";
 
+// PrivateRoute component:
+// - Checks for an auth token in localStorage.
+// - If present, renders its children (protected content).
+// - Otherwise, redirects to the login page.
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" />;
 };
 
+// App component:
+// - Root of the application.
+// - Manages basic user info (username, fullName) stored in localStorage.
+// - Sets up public and protected routes using react-router.
 function App() {
+  // Initialize user state from localStorage so it persists across reloads.
   const [user, setUser] = useState({
     username: localStorage.getItem("username") || "",
     fullName:  localStorage.getItem("fullName") || ""
   });
 
+  // Sync user state with localStorage when the App mounts.
   useEffect(() => {
-    // whenever App mounts, pull user info out of localStorage
     setUser({
       username: localStorage.getItem("username") || "",
       fullName:  localStorage.getItem("fullName") || ""
@@ -27,9 +36,11 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
+        {/* Protected routes wrapped in PrivateRoute */}
         <Route
           path="/battle-brief-bulwark"
           element={
@@ -46,6 +57,8 @@ function App() {
             </PrivateRoute>
           }
         />
+
+        {/* Catch-all: redirect unknown routes to login */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

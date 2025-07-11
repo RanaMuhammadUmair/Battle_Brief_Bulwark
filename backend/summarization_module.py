@@ -44,16 +44,16 @@ def summarize_text(text, model_name):
     summary = None
 
     # Select the appropriate summarization backend based on model_name
-    if model_name == "GPT-4.1":
-        # Use OpenAI GPT-4.1 via the OpenAI SDK
+    if model_name == "GPT 4.1":
+        # Use OpenAI GPT 4.1 via the OpenAI SDK
         summary = summarize_with_gpt_4point1(text)
 
-    elif model_name == "CLAUDE SONNET 3.7":
+    elif model_name == "Claude Sonnet 3.7":
         # Use Anthropic Claude Sonnet 3.7 client
         summary = summarize_with_claude_sonnet_3_7(text)
 
-    elif model_name == "BART":
-        # Use Hugging Face’s BART sequence‐to‐sequence model
+    elif model_name == "Bart":
+        # Use Hugging Face’s Bart sequence‐to‐sequence model
         summary = summarize_with_bart(text)
 
     elif model_name == "Mistral small":
@@ -80,7 +80,7 @@ def summarize_text(text, model_name):
         # Fallback for unsupported model names
         return (
             "Error: Unsupported model selected. "
-            "Please choose from GPT-4.1, CLAUDE SONNET 3.7, BART, "
+            "Please choose from GPT 4.1, Claude Sonnet 3.7, Bart, "
             "Mistral small, Gemini 2.5 Pro, DeepSeek-R1, Llama 3.1, or Grok 3."
         )
 
