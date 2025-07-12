@@ -39,14 +39,17 @@ import {
   Stack,
   CardHeader
 } from "@mui/material";
+// Import icons for UI elements
 import DeleteIcon from "@mui/icons-material/Delete";
 import HistoryIcon from "@mui/icons-material/History";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import LogoutIcon from "@mui/icons-material/Logout";
+// Navigation and document handling
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
+// Visualization components
 import {
   ResponsiveContainer,
   BarChart,
@@ -62,29 +65,54 @@ import {
 } from "recharts";
 import ReactMarkdown from "react-markdown";
 
+/**
+ * Configuration constants for file uploads
+ */
 const supportedFileTypes = [".txt", ".pdf", ".docx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 Mb
 
-// const UploadPage = ({ user }) => {
+/**
+ * BattleBriefBulwark - Main component for the NATO report summarization application
+ * 
+ * This component handles:
+ * - File and text input management
+ * - LLM model selection
+ * - API integration for summarization
+ * - Results visualization
+ * - Historical summary management
+ * 
+ * @param {Object} user - The current authenticated user object
+ * @returns {JSX.Element} The rendered component
+ */
 const BattleBriefBulwark = ({ user }) => {
   const navigate = useNavigate();
-  const [files, setFiles] = useState([]);
-  const [manualText, setManualText] = useState("");
-  const [model, setModel] = useState("Mistral small");
-  const [summaries, setSummaries] = useState([]);
-  const [storedSummaries, setStoredSummaries] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedSummary, setSelectedSummary] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(""); // New state for search term
-  const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  
+  // =========== State Management ===========
+  // File and input management
+  const [files, setFiles] = useState([]); // Files selected for upload
+  const [manualText, setManualText] = useState(""); // Text entered manually
+  const [model, setModel] = useState("Mistral small"); // Selected LLM model
+  
+  // Results and history management
+  const [summaries, setSummaries] = useState([]); // Current session summaries
+  const [storedSummaries, setStoredSummaries] = useState([]); // All user's summaries from DB
+  const [selectedSummary, setSelectedSummary] = useState(null); // Currently selected summary for viewing
+  
+  // UI state management
+  const [loading, setLoading] = useState(false); // Indicates API processing
+  const [errorMsg, setErrorMsg] = useState(""); // Error messages
+  const [drawerOpen, setDrawerOpen] = useState(false); // History drawer state
+  const [searchTerm, setSearchTerm] = useState(""); // Search input for finding past summaries
+  const [userMenuAnchor, setUserMenuAnchor] = useState(null); // Anchor for user dropdown menu
 
-  // Ranking state
-  const [rankingCriterion, setRankingCriterion] = useState("overall");
-  const [modelStats, setModelStats] = useState([]);
-  const [ethicalCriterion, setEthicalCriterion] = useState('overall');
+  // Performance analysis state
+  const [rankingCriterion, setRankingCriterion] = useState("overall"); // Selected quality metric
+  const [modelStats, setModelStats] = useState([]); // Aggregated model performance statistics
+  const [ethicalCriterion, setEthicalCriterion] = useState('overall'); // Selected ethical metric
 
+  /**
+   * Available LLM models with their display information
+   */
   const modelOptions = [
     { name: "GPT 4.1",    value: "GPT 4.1",    logo: "/logos/ChatGPT-Logo.gif" },
     { name: "Bart",       value: "Bart",       logo: "/logos/meta-logo.gif" },
@@ -96,7 +124,13 @@ const BattleBriefBulwark = ({ user }) => {
     { name: "Grok 3",        value: "Grok 3",        logo: "/logos/xAi-logo.gif" },
   ];
 
-  // File change
+  // =========== Event Handlers ===========
+  /**
+   * Handles file selection from the file input
+   * Validates file types and sizes before adding to state
+   * 
+   * @param {Event} e - The file input change event
+   */
   const handleFileChange = (e) => {
     const valid = Array.from(e.target.files).filter((f) => {
       const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
@@ -116,11 +150,19 @@ const BattleBriefBulwark = ({ user }) => {
     setSelectedSummary(null);
   };
 
+  /**
+   * Removes a file from the selected files list
+   * 
+   * @param {number} idx - Index of the file to remove
+   */
   const handleRemoveFile = (idx) => {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Fetch stored summaries
+  /**
+   * Fetches all summaries for the current user from the backend
+   * Updates the storedSummaries state with the results
+   */
   async function fetchStoredSummaries() {
     try {
       const token = localStorage.getItem("token");
@@ -143,11 +185,15 @@ const BattleBriefBulwark = ({ user }) => {
     }
   }
 
+  // Load summaries when component mounts
   useEffect(() => {
     fetchStoredSummaries();
   }, []);
 
-  // Recompute model stats whenever storedSummaries changes
+  /**
+   * Processes stored summaries to calculate performance metrics for each model
+   * Updates modelStats state with aggregated data
+   */
   useEffect(() => {
     const stats = {};
 
@@ -185,6 +231,12 @@ const BattleBriefBulwark = ({ user }) => {
     setModelStats(arr);
   }, [storedSummaries]);
 
+  /**
+   * Processes the summarization request
+   * Handles both file uploads and manually entered text
+   * 
+   * @param {Event} e - The form submit event
+   */
   const handleSummarize = async (e) => {
     e.preventDefault();
     setErrorMsg("");
@@ -250,6 +302,11 @@ const BattleBriefBulwark = ({ user }) => {
     fetchStoredSummaries();
   };
 
+  /**
+   * Deletes a summary from the database
+   * 
+   * @param {string} id - ID of the summary to delete
+   */
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
     await fetch(`http://localhost:8000/summaries/${id}`, {
@@ -259,6 +316,12 @@ const BattleBriefBulwark = ({ user }) => {
     fetchStoredSummaries();
   };
 
+  /**
+   * Renders the history drawer content
+   * Shows all stored summaries in chronological order
+   * 
+   * @returns {JSX.Element} The history drawer content
+   */
   const renderHistory = () => {
     // always show full history, newest first
     const sorted = [...storedSummaries].sort(
@@ -275,7 +338,7 @@ const BattleBriefBulwark = ({ user }) => {
         ) : (
           <List>
             {sorted.map(item => {
-              // find logo, etc—exactly as before
+              // find logo for the model used
               const opt = modelOptions.find(o => o.value === item.metadata?.model);
               const logoSrc = opt?.logo.replace('.gif', '.png') || "";
 
@@ -324,15 +387,18 @@ const BattleBriefBulwark = ({ user }) => {
     );
   };
 
-  // decide which list to draw: either the clicked history item or live summaries
+  // Determine which summaries to display (selected history item or current summaries)
   const displayList = selectedSummary ? [selectedSummary] : summaries;
 
-  // derive options from storedSummaries
+  // Generate search options from stored summaries for Autocomplete
   const historyOptions = storedSummaries.map(item => ({
     label: `${item.filename} — ${new Date(item.created_at).toLocaleString()} — ${item.metadata?.model}`,
     item
   }));
 
+  /**
+   * User menu event handlers
+   */
   const handleUserMenuOpen = (e) => setUserMenuAnchor(e.currentTarget);
   const handleUserMenuClose = () => setUserMenuAnchor(null);
   const handleLogout = () => {
@@ -340,8 +406,10 @@ const BattleBriefBulwark = ({ user }) => {
     navigate("/login");
   };
 
+  // =========== Component Rendering ===========
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      {/* Application Header */}
       <Box
         sx={{
           display: "flex",
@@ -352,6 +420,7 @@ const BattleBriefBulwark = ({ user }) => {
           backgroundColor: "#f5f5f5"
         }}
       >
+        {/* Logo */}
         <img
           src="/logos/header logo1920 x 400.gif"
           alt="Animated NATO logo with dynamic elements, representing intelligence summarization in a modern digital workspace. The environment is professional and welcoming. The text NATO Intelligence Summarizer is displayed."
@@ -359,14 +428,13 @@ const BattleBriefBulwark = ({ user }) => {
           left={20}
         />
 
-        {/* ← your existing Autocomplete */}
+        {/* Search functionality */}
         <Box
           sx={{
             flex: 1,
             display: "flex",
-            justifyContent: "center",  // was "center"
-            // you can add a little left padding if you want:
-             pr: 32
+            justifyContent: "center",
+            pr: 32
           }}
         >
           <Autocomplete
@@ -402,6 +470,7 @@ const BattleBriefBulwark = ({ user }) => {
           />
         </Box>
 
+        {/* User profile and menu */}
         <Box sx={{ display: "flex", alignItems: "center", pr: 4, gap: 2 }}>
           <Button
           
@@ -438,18 +507,20 @@ const BattleBriefBulwark = ({ user }) => {
         </Box>
       </Box>
 
+      {/* Main Content Area */}
       <Box sx={{ display: "flex", flex: 1 }}>
-        {/* Sidebar */}
+        {/* Left Sidebar */}
         <Box
           sx={{
             width: 315,
             p: 2,
             borderRight: "1px solid #ccc",
             backgroundColor: "#fafafa",
-            display: "flex",            /* make sidebar a column flex */
+            display: "flex",
             flexDirection: "column"
           }}
         >
+          {/* History and File Selection Buttons */}
           <Button
             startIcon={<HistoryIcon />}
             fullWidth
@@ -470,6 +541,8 @@ const BattleBriefBulwark = ({ user }) => {
             Select Files
             <input hidden multiple type="file" onChange={handleFileChange} />
           </Button>
+          
+          {/* Selected Files List */}
           <Box sx={{ mt: 2 }}>
             {files.length ? (
               files.map((f, i) => (
@@ -497,6 +570,8 @@ const BattleBriefBulwark = ({ user }) => {
           </Box>
 
           <Divider sx={{ my: 2 }} />
+          
+          {/* Model Performance Card */}
           <Card sx={{ mb:2, p:2, backgroundColor:'background.paper' }}>
             <Box sx={{ display:'flex', alignItems:'center', mb:2 }}>
               <SettingsIcon fontSize="small" sx={{ mr:1, color:'primary.main' }}/>
@@ -527,6 +602,7 @@ const BattleBriefBulwark = ({ user }) => {
             </FormControl>
           </Card>
 
+          {/* Model Performance Rankings */}
           {modelStats
             .sort((a,b) => b.averages[rankingCriterion] - a.averages[rankingCriterion])
             .map(ms => {
@@ -589,6 +665,7 @@ const BattleBriefBulwark = ({ user }) => {
                     </Box>
                   </AccordionSummary>
 
+                  {/* Detailed performance metrics */}
                   <AccordionDetails>
                     {["overall","consistency","coverage","coherence","fluency"].map(crit => {
                       const score = (ms.averages[crit]||0).toFixed(2);
@@ -616,6 +693,8 @@ const BattleBriefBulwark = ({ user }) => {
           {/* ===== end Model Ranking Section ====== */}
 
           <Divider sx={{ my: 2 }} />
+          
+          {/* Ethical Considerations Card */}
           <Card sx={{ mb: 2, p: 2, backgroundColor: 'background.paper' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <SettingsIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
@@ -657,6 +736,7 @@ const BattleBriefBulwark = ({ user }) => {
             </FormControl>
           </Card>
 
+          {/* Dynamic ethical ranking calculations and display */}
           {(() => {
   // 1) build per‐model inverted averages for all eight fields
   const KEYS = [
@@ -767,6 +847,7 @@ const BattleBriefBulwark = ({ user }) => {
     );
   });
 })()}
+        {/* Settings button at bottom of sidebar */}
         <Button
             startIcon={<SettingsIcon />}
             fullWidth
@@ -779,10 +860,11 @@ const BattleBriefBulwark = ({ user }) => {
           </Button>
         </Box>
 
-        {/* Main */}
+        {/* Main Content Area */}
         <Paper elevation={3} sx={{ flex: 1, p: 4 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Select Model</Typography>
 
+          {/* Model Selection Grid */}
           <Box
             sx={{
               display: 'grid',
@@ -819,7 +901,7 @@ const BattleBriefBulwark = ({ user }) => {
                   aspectRatio: '1.2 / 1',
                   overflow: 'hidden',
 
-                  // ← define your vibrate keyframes inline
+                  // Animation keyframes for loading state
                   '@keyframes vibrate': {
                     '0%':   { transform: 'translate(0)' },
                     '20%':  { transform: 'translate(-2px, 2px)' },
@@ -829,7 +911,7 @@ const BattleBriefBulwark = ({ user }) => {
                     '100%': { transform: 'translate(0)' }
                   },
 
-                  // ← hook animation to your loading flag
+                  // Apply animation conditionally
                   animation: loading && model === opt.value
                     ? 'vibrate 0.9s linear infinite'
                     : 'none',
@@ -853,6 +935,7 @@ const BattleBriefBulwark = ({ user }) => {
             ))}
           </Box>
 
+          {/* Manual Text Input */}
           <TextField
             multiline
             rows={8}
@@ -877,12 +960,12 @@ const BattleBriefBulwark = ({ user }) => {
             }
           </Button>
 
-          {/* === new: display ALL live summaries with full detail === */}
+          {/* Summary Results Section */}
           {displayList.length > 0 && (
             <Box sx={{ mt: 4 }}>
               {displayList.map(item => (
                 <Box key={item.filename} sx={{ mb: 5, p: 2, border: 1, borderColor: "grey.300", borderRadius: 1 }}>
-                  {/* Header chips */}
+                  {/* Header chips with summary metadata */}
                   <Chip
                     label={`Summary of "${item.filename}"`}
                     sx={{ mb: 1, backgroundColor: theme => theme.palette.warning.main }}
@@ -896,7 +979,7 @@ const BattleBriefBulwark = ({ user }) => {
                     sx={{ mb: 1, ml: 1, backgroundColor: "#ffb74d" }}
                   />
 
-                  {/* Summary text */}
+                  {/* Summary text display */}
                   <Card variant="outlined" sx={{ mb: 2 }}>
                     <CardContent>
                       <Typography>
@@ -905,7 +988,7 @@ const BattleBriefBulwark = ({ user }) => {
                     </CardContent>
                   </Card>
 
-                  {/* Copy & PDF */}
+                  {/* Summary action buttons, copy and Download */}
                   <Button
                     variant="contained"
                     size="small"
@@ -926,10 +1009,10 @@ const BattleBriefBulwark = ({ user }) => {
                     Download PDF
                   </Button>
 
-                  {/* only show all the detail tables/charts if metadata is present */}
+                  {/* Additional analytics sections (shown only if metadata exists) */}
                   {item.metadata && (
                     <>
-                      {/* Quality Scores */}
+                      {/* Quality Scores Section */}
                       <Typography variant="h6" sx={{ mt: 4 }}>Quality Scores</Typography>
                       <Box sx={{ display: "flex", alignItems: "center", mt: 2 }}>
                         <TableContainer component={Paper} sx={{ flex: 2, maxWidth: "70%", mr: 2 }}>
@@ -953,7 +1036,7 @@ const BattleBriefBulwark = ({ user }) => {
                           </Table>
                         </TableContainer>
                         <Box sx={{ flex: 1, maxWidth: "30%" }}>
-                          {/* Pie chart */}
+                          {/* Quality scores pie chart */}
                           <ResponsiveContainer width="100%" height={250}>
                             <PieChart>
                               <Pie
@@ -979,7 +1062,7 @@ const BattleBriefBulwark = ({ user }) => {
                         </Box>
                       </Box>
 
-                      {/* Ethical Considerations */}
+                      {/* Ethical Considerations Section */}
                       <Typography variant="h6" sx={{ mt: 4 }}>Ethical Considerations</Typography>
                       <TableContainer component={Paper} sx={{ mt: 2 }}>
                         <Table size="small">
@@ -1015,7 +1098,7 @@ const BattleBriefBulwark = ({ user }) => {
                         </Table>
                       </TableContainer>
 
-                      {/* Toxicity Comparison */}
+                      {/* Toxicity Comparison Chart */}
                       <Typography variant="h6" sx={{ mt: 4 }}>Toxicity Comparison</Typography>
                       <ResponsiveContainer width="100%" height={250} sx={{ mt: 2 }}>
                         <BarChart
@@ -1042,7 +1125,7 @@ const BattleBriefBulwark = ({ user }) => {
         </Paper>
       </Box>
 
-      {/* History Drawer */}
+      {/* History Drawer (slides in from left) */}
       <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Box
           sx={{ width: 295 }}
