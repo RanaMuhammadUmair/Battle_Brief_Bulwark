@@ -1,7 +1,26 @@
+/**
+ * Main Stylesheet
+ * 
+ * This file contains global styles and design tokens for consistent
+ * theming across the application. It implements a military-inspired
+ * color palette with olive green accents.
+ */
+
+/* Tailwind CSS Framework Integration */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Global Design Tokens and Theme Variables
+ * 
+ * Color palette:
+ * - Primary: Military olive drab (#556B2F, #6B8E23)
+ * - Secondary: Sage green (#8F9779)
+ * - Background: Clean white (#ffffff)
+ * - Text: Dark slate gray and olive green for contrast
+ * - Feedback colors: Success (green), Warning (orange), Error (dark red)
+ */
 :root {
   --clr-primary-main:   #556B2F;
   --clr-primary-light:  #6B8E23;
@@ -23,7 +42,12 @@
   background-color: #f8f9fa;
 }
 
-/* Reset default margins and paddings */
+/**
+ * Base Element Styling
+ * 
+ * Reset defaults and establish consistent base styling
+ * for core HTML elements across the application.
+ */
 body {
   margin: 0;
   padding: 0;
@@ -33,6 +57,12 @@ body {
   background-color: var(--clr-bg-default);
 }
 
+/**
+ * Root Container
+ * 
+ * Ensures content fills available space and maintains
+ * consistent alignment throughout the application.
+ */
 #root {
   width: 100%;
   max-width: 100%;
@@ -41,10 +71,22 @@ body {
   text-align: left;
 }
 
+/**
+ * Typography - Heading Elements
+ * 
+ * Consistent styling for all heading levels to maintain
+ * visual hierarchy throughout the application.
+ */
 h1, h2, h3, h4, h5, h6 {
   font-weight: bold;
 }
 
+/**
+ * Interactive Elements - Buttons
+ * 
+ * Standard styling for button elements with consistent
+ * border radius, font properties, and colors.
+ */
 button {
   border-radius: 8px;
   font-size: 1rem;
@@ -53,6 +95,12 @@ button {
   color:            var(--clr-text-primary);
 }
 
+/**
+ * Media Queries - Light Mode Preference
+ * 
+ * Adjusts the color scheme for users who prefer light mode
+ * in their system settings.
+ */
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
