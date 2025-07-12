@@ -1,3 +1,13 @@
+/**
+ * Login Page Component
+ * 
+ * This component provides a user authentication interface with:
+ * - Username and password form fields
+ * - Form validation and error handling
+ * - JWT token-based authentication
+ * - Dynamic video background for military-themed atmosphere
+ * - Responsive layout using Material-UI components
+ */
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -8,11 +18,27 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import bgVideo from './assets/videos/BATTLE-BRIEF_bg-1080p.mp4';
 
 const LoginPage = () => {
+    // Navigation hook for redirection after successful login
     const navigate = useNavigate();
+    
+    // Form state management for controlled inputs and error handling
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
+    /**
+     * Handles user login authentication
+     * 
+     * This function:
+     * 1. Prevents default form submission behavior
+     * 2. Makes a POST request to the authentication endpoint
+     * 3. Stores the JWT token in localStorage upon successful login
+     * 4. Saves user information for application-wide access
+     * 5. Redirects to the main application dashboard
+     * 6. Handles and displays authentication errors
+     * 
+     * @param {Event} e - The form submission event
+     */
     const handleLogin = async e => {
         e.preventDefault();
         try {
@@ -36,6 +62,14 @@ const LoginPage = () => {
     };
 
     return (
+        /**
+         * Page Layout Structure
+         * 
+         * The UI is built with three main layers:
+         * 1. Full-viewport container with relative positioning
+         * 2. Military-themed background video for visual context
+         * 3. Semi-transparent login form card with elevated z-index
+         */
         <Box
             sx={{
                 position: 'relative',
@@ -48,6 +82,7 @@ const LoginPage = () => {
                 py: 4,
             }}
         >
+            {/* Background Video - Military-themed visual context */}
             <video
                 autoPlay
                 loop
@@ -62,17 +97,17 @@ const LoginPage = () => {
                     left: 0,
                     width: '100vw',
                     height: '100vh',
-                
                     objectFit: 'cover',
                     zIndex: 0,            // sit just above the body background
                 }}
             />
 
+            {/* Login Form Container - Elevated above background */}
             <Container
                 maxWidth="xs"
                 sx={{
                     position: 'relative',
-                    zIndex: 1,            // raise form above the video
+                    zIndex: 1,            
                 }}
             >
                 <Paper
@@ -80,10 +115,11 @@ const LoginPage = () => {
                     sx={{
                         p: { xs: 2, sm: 4 },
                         borderRadius: 1,
-                        bgcolor: 'rgba(255, 255, 255, 0.7)',   // ← translucent white
-                        backdropFilter: 'blur(1px)'         // ← optional frosted-glass effect
+                        bgcolor: 'rgba(255, 255, 255, 0.7)',   
+                        backdropFilter: 'blur(1px)'            
                     }}
                 >
+                    {/* Form Header with Lock Icon and Title */}
                     <Stack alignItems="center" spacing={1} sx={{ mb: 2 }}>
                         <Avatar sx={{ bgcolor: "primary.main" }}>
                             <LockOutlinedIcon />
@@ -93,8 +129,10 @@ const LoginPage = () => {
                         </Typography>
                     </Stack>
 
+                    {/* Conditional Error Alert - Only renders when auth fails */}
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
+                    {/* Login Form - Username, Password, and Submit Button */}
                     <Box component="form" onSubmit={handleLogin} noValidate>
                         <TextField
                             label="Username"
@@ -122,8 +160,9 @@ const LoginPage = () => {
                         </Button>
                     </Box>
 
+                    {/* Registration Link - Provides navigation to signup */}
                     <Typography align="center" sx={{ mt: 2 }}>
-                        Don’t have an account? <Link to="/signup">Sign Up here</Link>
+                        Don't have an account? <Link to="/signup">Sign Up here</Link>
                     </Typography>
                 </Paper>
             </Container>
