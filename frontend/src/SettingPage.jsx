@@ -1,3 +1,13 @@
+/**
+ * Account Settings Page Component
+ * 
+ * This component provides a user profile management interface with:
+ * - Profile information display and editing (username, full name, email)
+ * - Password change functionality with current password verification
+ * - Form validation and error handling
+ * - JWT token management for authenticated API requests
+ * - Responsive layout using Material-UI components
+ */
 import React, { useState, useEffect } from "react";
 import {
     Box, Container, Paper, Stack, Avatar, Divider,
@@ -6,9 +16,24 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
+/**
+ * SettingPage Component
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.user - User data passed from parent component
+ * @returns {JSX.Element} - Rendered component
+ */
 const SettingPage = ({ user }) => {
     const navigate = useNavigate();
 
+    /**
+     * State Management
+     * 
+     * profile: Stores user profile information (username, fullName, email)
+     * passwordForm: Manages password change form data
+     * error/success: Feedback messages for user actions
+     * showProfileDialog/showPasswordDialog: Control modal visibility
+     */
     const [profile, setProfile] = useState({
         username: user?.username  || "",
         fullName: user?.fullName  || "",
@@ -34,7 +59,14 @@ const SettingPage = ({ user }) => {
     const [showProfileDialog, setShowProfileDialog]   = useState(false);
     const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
-    // On mount we try GET /settings, but if 401 we fall back to user prop
+    /**
+     * Profile Data Fetching
+     * 
+     * On component mount, fetches the latest user profile from the server:
+     * - Uses JWT token for authentication
+     * - Falls back to props data if authentication fails
+     * - Updates state with received profile information
+     */
     useEffect(() => {
         const fetchProfile = async () => {
             const token = localStorage.getItem("token");
@@ -61,11 +93,21 @@ const SettingPage = ({ user }) => {
         fetchProfile();
     }, [user]);
 
+    /**
+     * Form Change Handlers
+     * 
+     * Manages controlled form inputs for profile and password forms
+     */
     const handleProfileChange = e =>
         setProfile({ ...profile, [e.target.name]: e.target.value });
     const handlePasswordChange = e =>
         setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
 
+    /**
+     * Dialog Management Functions
+     * 
+     * Controls the visibility of confirmation dialogs and resets form state
+     */
     const openProfileDialog = () => {
         setError(""); setSuccess("");
         setPasswordForm({ ...passwordForm, currentPassword: "" });
@@ -79,6 +121,16 @@ const SettingPage = ({ user }) => {
     };
     const closePasswordDialog = () => setShowPasswordDialog(false);
 
+    /**
+     * Profile Update Handler
+     * 
+     * Saves profile changes to the server with current password verification:
+     * 1. Validates current password is provided
+     * 2. Submits profile update with JWT authentication
+     * 3. Updates local state and localStorage with new user data
+     * 4. Handles token refresh if provided by the server
+     * 5. Provides success/error feedback to the user
+     */
     const handleSaveProfile = async () => {
         setError(""); setSuccess("");
         if (!passwordForm.currentPassword) {
@@ -108,7 +160,7 @@ const SettingPage = ({ user }) => {
                 fullName: data.full_name || "",
                 email:    data.email      || ""
             });
-            // 2) Persist to localStorage so we don’t lose it on 401
+            // 2) Persist to localStorage so we don't lose it on 401
             localStorage.setItem("username", data.username);
             localStorage.setItem("fullName", data.full_name || "");
             localStorage.setItem("email", data.email);
@@ -124,6 +176,14 @@ const SettingPage = ({ user }) => {
         }
     };
 
+    /**
+     * Password Change Handler
+     * 
+     * Manages password update process:
+     * 1. Validates password confirmation matches
+     * 2. Submits password change request with current password verification
+     * 3. Provides feedback on success/failure
+     */
     const handleChangePassword = async () => {
         setError("");
         if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
@@ -151,6 +211,11 @@ const SettingPage = ({ user }) => {
         }
     };
 
+    /**
+     * UI Helper Styles
+     * 
+     * Consistent styling for form field labels
+     */
     const labelStyle = {
         shrink: true,
         sx: {
@@ -170,8 +235,10 @@ const SettingPage = ({ user }) => {
                 py: 4
             }}
         >
+            {/* Main Settings Container */}
             <Container maxWidth="xs">
                 <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 1 }}>
+                    {/* Header with User Avatar */}
                     <Stack alignItems="center" spacing={1} sx={{ mb: 2 }}>
                         <Avatar sx={{ bgcolor: "primary.main", width: 72, height: 72 }}>
                             {profile.fullName?.[0] || profile.username?.[0]}
@@ -182,9 +249,11 @@ const SettingPage = ({ user }) => {
                     </Stack>
                     <Divider sx={{ mb: 3 }} />
 
+                    {/* Error and Success Messages */}
                     {error   && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
                     {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
+                    {/* Profile Form Fields */}
                     <TextField
                         variant="outlined"
                         margin="dense"
@@ -215,11 +284,12 @@ const SettingPage = ({ user }) => {
                         name="email"
                         value={profile.email}
                         onChange={handleProfileChange}
-                        helperText="We’ll never share your email."
+                        helperText="We'll never share your email."
                         sx={{ mb: 3 }}
                         InputLabelProps={labelStyle}
                     />
 
+                    {/* Action Buttons */}
                     <Stack direction="row" justifyContent="flex-end" spacing={2}>
                         <Button variant="contained" onClick={openProfileDialog}>
                             Save Changes
@@ -229,6 +299,7 @@ const SettingPage = ({ user }) => {
                         </Button>
                     </Stack>
 
+                    {/* Navigation Link */}
                     <Box sx={{ mt: 2, textAlign: "right" }}>
                         <Button variant="text" onClick={() => navigate("/battle-brief-bulwark")}>
                             Go to summary page
@@ -237,7 +308,7 @@ const SettingPage = ({ user }) => {
                 </Paper>
             </Container>
 
-            {/* Confirm Profile Changes */}
+            {/* Profile Update Confirmation Dialog */}
             <Dialog open={showProfileDialog} onClose={closeProfileDialog}>
                 <DialogTitle>Confirm Profile Changes</DialogTitle>
                 <DialogContent>
@@ -262,7 +333,7 @@ const SettingPage = ({ user }) => {
                 </DialogActions>
             </Dialog>
 
-            {/* Change Password */}
+            {/* Password Change Dialog */}
             <Dialog open={showPasswordDialog} onClose={closePasswordDialog}>
                 <DialogTitle>Change Password</DialogTitle>
                 <DialogContent>
