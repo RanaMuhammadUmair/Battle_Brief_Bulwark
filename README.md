@@ -4,7 +4,7 @@
 
 A sophisticated web application for military intelligence report summarization powered by state-of-the-art Large Language Models (LLMs).
 
-![Battle Brief Bulwark Dashboard](frontend\public\picture\Battel-brief-bulwark.gif)
+![Battle Brief Bulwark Dashboard](frontend/public/picture/Battle-brief-bulwark.gif)
 
 ## Academic Project
 
@@ -143,13 +143,10 @@ We welcome contributions to Battle Brief Bulwark. Please follow these steps:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 
-- NATO for inspiration and use case scenarios
+- NATO for collaboration inspiration and use case scenarios
 - The open-source community for tools and libraries
 - All contributors who have helped shape this project
 
