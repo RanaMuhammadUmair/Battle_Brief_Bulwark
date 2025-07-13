@@ -1,7 +1,7 @@
 # Battle Brief Bulwark
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/…/Battle_Brief_Bulwark/releases)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/RanaMuhammadUmair/Nato-llm-summerizer/ci.yml)]()
+[![Build Status](https://img.shields.io/github/actions/workflow/status/RanaMuhammadUmair/Battle_Brief_Bulwark/ci.yml)]()
 
 A web application for military intelligence report summarization powered by state-of-the-art LLMs, built as an academic master’s thesis project in collaboration with NATO JWC.
 
