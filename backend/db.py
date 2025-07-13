@@ -50,7 +50,7 @@ class Database:
             summary (str): Generated summary text
             metadata (dict): Additional metadata including filename
             
-        Note: Automatically enforces a limit of 1000 summaries per user by removing oldest entries.
+        Note: Automatically enforces a limit of 10000 summaries per user by removing oldest entries.
         """
         # Insert new summary record
         query = """
@@ -68,8 +68,8 @@ class Database:
         summary_count = count_result["count"]
         
         # Remove oldest summaries if limit exceeded
-        if summary_count > 1000:
-            num_to_remove = summary_count - 1000
+        if summary_count > 10000:
+            num_to_remove = summary_count - 10000
             delete_query = """
             DELETE FROM summaries 
             WHERE id IN (
