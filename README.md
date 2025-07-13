@@ -4,7 +4,7 @@
 
 A sophisticated web application for military intelligence report summarization powered by state-of-the-art Large Language Models (LLMs).
 
-![Battle Brief Bulwark Dashboard](frontend/public/picture/Battle-brief-bulwark.gif)
+![Battle Brief Bulwark Dashboard](./frontend/public/picture/Battle-brief-bulwark.gif)
 
 ## Academic Project
 
