@@ -1,3 +1,17 @@
+/**
+ * Supplementary Styles
+ *
+ * This stylesheet provides component-specific styling that complements
+ * the global styles defined in index.css. It follows the same military-inspired
+ * design language with focused styling for form elements and content display.
+ */
+
+/**
+ * Container Components
+ *
+ * Provides a card-like container with consistent spacing, borders, and shadows
+ * for content segmentation and visual hierarchy across the application.
+ */
 .container {
     max-width: 600px;
     margin: 2rem auto;
@@ -7,9 +21,23 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     background-color: #fff;
 }
+
+/**
+ * Form Layout Elements
+ *
+ * Establishes consistent spacing between form elements
+ * to improve readability and user interaction.
+ */
 .form-group {
     margin-bottom: 1rem;
 }
+
+/**
+ * Text Input Fields
+ *
+ * Unified styling for all text-based input types with consistent
+ * width, padding, borders, and corner rounding for visual cohesion.
+ */
 input[type="text"],
 input[type="email"],
 input[type="password"] {
@@ -18,6 +46,14 @@ input[type="password"] {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
+
+/**
+ * Button Components
+ *
+ * Primary action buttons using the application's color scheme
+ * with consistent padding, typography, and interactive states.
+ * Uses CSS variables from the root theme for color consistency.
+ */
 .btn {
     display: inline-block;
     padding: 0.5rem 1rem;
@@ -29,26 +65,65 @@ input[type="password"] {
     font-weight: 500;
     cursor: pointer;
 }
+
+/**
+ * Button Hover State
+ *
+ * Provides visual feedback on interaction with a darker shade
+ * of the military green palette for improved user experience.
+ */
 .btn:hover {
     background-color: #3B5323;
 }
+
+/**
+ * Error Message Display
+ *
+ * Clear visual indicator for error messages with
+ * high-contrast red text for immediate attention.
+ */
 .error {
     color: red;
 }
+
+/**
+ * Markdown Content Styling
+ *
+ * Specialized formatting for rendering markdown content with
+ * consistent typography and readable line spacing.
+ */
 .markdown {
   font-family: Arial, sans-serif;
   line-height: 1.6;
 }
 
+/**
+ * Markdown Headings
+ *
+ * Consistent heading styles within markdown content
+ * to maintain proper visual hierarchy.
+ */
 .markdown h1, .markdown h2, .markdown h3 {
   font-weight: bold;
 }
 
+/**
+ * Markdown Lists
+ *
+ * Properly indented and styled unordered lists
+ * with standard disc bullets for structured content.
+ */
 .markdown ul {
   list-style-type: disc;
   margin-left: 20px;
 }
 
+/**
+ * Markdown Paragraphs
+ *
+ * Consistent spacing between paragraphs for
+ * improved readability of long-form content.
+ */
 .markdown p {
   margin: 10px 0;
 }
