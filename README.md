@@ -1,16 +1,9 @@
 # Battle Brief Bulwark
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 
 A web application for military intelligence report summarization powered by state-of-the-art LLMs, built as an academic master’s thesis project in collaboration with NATO JWC.
 
 ---
-
-## Table of Contents
-
-# Battle Brief Bulwark
-
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-
-A powerful web application for military intelligence report summarization powered by cutting-edge Large Language Models (LLMs).
 
 ## Table of Contents
 - [Overview](#overview)
