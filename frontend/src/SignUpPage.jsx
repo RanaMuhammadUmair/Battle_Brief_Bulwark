@@ -1,3 +1,13 @@
+/**
+ * Sign Up Page Component
+ * 
+ * This component provides a user registration interface with:
+ * - Form fields for creating a new account (username, full name, email, password)
+ * - Client-side validation for password matching
+ * - Error handling and feedback
+ * - Navigation to login page after successful registration
+ * - Responsive layout using Material-UI components
+ */
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -7,15 +17,39 @@ import {
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 
 const SignUpPage = () => {
+    // Navigation hook for redirection after successful registration
     const navigate = useNavigate();
+    
+    // Form state management for all input fields
     const [form, setForm] = useState({
         username: "", fullName: "", email: "", password: "", confirmPassword: ""
     });
+    
+    // Error state for validation and API errors
     const [error, setError] = useState("");
 
+    /**
+     * Generic change handler for all form fields
+     * 
+     * Updates the form state with the new value while preserving other field values
+     * 
+     * @param {Event} e - The input change event
+     */
     const handleChange = e =>
         setForm({ ...form, [e.target.name]: e.target.value });
 
+    /**
+     * Handles user registration submission
+     * 
+     * This function:
+     * 1. Prevents default form submission behavior
+     * 2. Validates that passwords match
+     * 3. Submits registration data to the API
+     * 4. Redirects to login page on success
+     * 5. Handles and displays registration errors
+     * 
+     * @param {Event} e - The form submission event
+     */
     const handleSignUp = async e => {
         e.preventDefault();
         if (form.password !== form.confirmPassword) {
@@ -44,6 +78,17 @@ const SignUpPage = () => {
     };
 
     return (
+        /**
+         * Page Layout Structure
+         * 
+         * The UI consists of:
+         * 1. Centered container with responsive sizing
+         * 2. Paper card with elevation for visual distinction
+         * 3. Header with user icon and title
+         * 4. Registration form with input fields
+         * 5. Error feedback alert (conditional)
+         * 6. Navigation link to login page
+         */
         <Box
             sx={{
                 minHeight: "100vh",
@@ -54,8 +99,10 @@ const SignUpPage = () => {
                 py: 4
             }}
         >
+            {/* Main Content Container */}
             <Container maxWidth="xs">
                 <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 1 }}>
+                    {/* Form Header with Icon and Title */}
                     <Stack alignItems="center" spacing={1} sx={{ mb: 2 }}>
                         <Avatar sx={{ bgcolor: "primary.main" }}>
                             <PersonAddOutlinedIcon />
@@ -65,8 +112,10 @@ const SignUpPage = () => {
                         </Typography>
                     </Stack>
 
+                    {/* Conditional Error Alert - Only renders when validation fails */}
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
+                    {/* Registration Form */}
                     <Box component="form" onSubmit={handleSignUp} noValidate>
                         <TextField
                             name="username"
@@ -121,6 +170,7 @@ const SignUpPage = () => {
                         </Button>
                     </Box>
 
+                    {/* Login Link - Provides navigation for existing users */}
                     <Typography align="center" sx={{ mt: 2 }}>
                         Already have an account? <Link to="/login">Login here</Link>
                     </Typography>
