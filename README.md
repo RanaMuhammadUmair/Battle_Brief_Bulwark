@@ -4,8 +4,6 @@
 
 A sophisticated web application for military intelligence report summarization powered by state-of-the-art Large Language Models (LLMs).
 
-![Battle Brief Bulwark Dashboard](https://raw.githubusercontent.com/RanaMuhammadUmair/Battle-Brief-Bulwark/main/frontend/public/picture/Battle-brief-bulwark.gif)
-
 ## Academic Project
 
 This application was developed as part of a master's thesis project at university of stavanger in collaboration with NATO Joint Warfare Centre, Stavanger, norway. This is an academic work and not intended for commercial distribution.
