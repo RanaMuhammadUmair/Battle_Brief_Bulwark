@@ -28,7 +28,7 @@ def summarize_text(text, model_name):
         model_name (str): Identifier of the summarization model to use.
             Supported values:
               - "GPT-4.1"
-              - "CLAUDE SONNET 3.7"
+              - "SONNET 3.7"
               - "BART"
               - "Mistral small"
               - "Gemini 2.5 Pro"
@@ -48,7 +48,7 @@ def summarize_text(text, model_name):
         # Use OpenAI GPT 4.1 via the OpenAI SDK
         summary = summarize_with_gpt_4point1(text)
 
-    elif model_name == "Claude Sonnet 3.7":
+    elif model_name == "Sonnet 3.7":
         # Use Anthropic Claude Sonnet 3.7 client
         summary = summarize_with_claude_sonnet_3_7(text)
 
@@ -56,9 +56,9 @@ def summarize_text(text, model_name):
         # Use Hugging Face’s Bart sequence‐to‐sequence model
         summary = summarize_with_bart(text)
 
-    elif model_name == "Mistral small":
+    elif model_name == "Mistral small 3":
         # Use Mistral AI’s small model via their Python SDK
-        summary = summarize_with_mistral_small(text)
+        summary = summarize_with_mistral_small3(text)
 
     elif model_name == "Gemini 2.5 Pro":
         # Use Google’s Gemini 2.5 Pro via google-generativeai
@@ -80,8 +80,8 @@ def summarize_text(text, model_name):
         # Fallback for unsupported model names
         return (
             "Error: Unsupported model selected. "
-            "Please choose from GPT 4.1, Claude Sonnet 3.7, Bart, "
-            "Mistral small, Gemini 2.5 Pro, DeepSeek-R1, Llama 3.1, or Grok 3."
+            "Please choose from GPT 4.1, Sonnet 3.7, Bart, "
+            "Mistral small 3, Gemini 2.5 Pro, DeepSeek-R1, Llama 3.1, or Grok 3."
         )
 
     return summary
@@ -301,8 +301,8 @@ def summarize_with_claude_sonnet_3_7(text: str) -> str:
 
     except Exception as e:
         # Logging the error for debugging and returning a user-friendly message
-        logger.error(f"Claude Sonnet 3.7 (anthropic) summarization failed: {e}")
-        return f"Error: Could not generate summary using Claude Sonnet 3.7. {e}"
+        logger.error(f"Sonnet 3.7 (anthropic) summarization failed: {e}")
+        return f"Error: Could not generate summary using Sonnet 3.7. {e}"
 
 
 
@@ -589,7 +589,7 @@ def summarize_with_grok_3(text: str) -> str:
 
 
 
-def summarize_with_mistral_small(text: str) -> str:
+def summarize_with_mistral_small3(text: str) -> str:
     """
     Summarize text using Mistral AI's small model via their Python SDK.
 

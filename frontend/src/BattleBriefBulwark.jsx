@@ -116,8 +116,8 @@ const BattleBriefBulwark = ({ user }) => {
   const modelOptions = [
     { name: "GPT 4.1",    value: "GPT 4.1",    logo: "/logos/ChatGPT-Logo.gif" },
     { name: "Bart",       value: "Bart",       logo: "/logos/meta-logo.gif" },
-    { name: "Claude Sonnet 3.7",     value: "Claude Sonnet 3.7",     logo: "/logos/anthropic-logo.gif" },
-    { name: "Mistral small",         value: "Mistral small",         logo: "/logos/mistral-logo.gif" },
+    { name: "Sonnet 3.7",     value: "Sonnet 3.7",     logo: "/logos/anthropic-logo.gif" },
+    { name: "Mistral small 3",         value: "Mistral small 3",         logo: "/logos/mistral-logo.gif" },
     { name: "Gemini 2.5 Pro", value: "Gemini 2.5 Pro", logo: "/logos/Cgemini-logo.gif" },
     { name: "DeepSeek-R1", value: "DeepSeek-R1", logo: "/logos/deepseek-logo.gif" },
     { name: "Llama 3.1",  value: "Llama 3.1",  logo: "/logos/meta-logo2.gif" },
@@ -671,7 +671,7 @@ const BattleBriefBulwark = ({ user }) => {
                       const score = (ms.averages[crit]||0).toFixed(2);
                       const bar = (ms.averages[crit]||0)/10*100;
                       return (
-                        <Box key={crit} sx={{ display:"flex", alignItems:"center", mb:1 }}>
+                        <Box key={crit} sx={{ display:"flex", alignItems:"center", mb: 1 }}>
                           <Typography sx={{ width:90, textTransform:"capitalize" }}>
                             {crit}
                           </Typography>
