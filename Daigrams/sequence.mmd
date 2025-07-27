@@ -1,0 +1,9 @@
+sequenceDiagram
+    Client->>Database: save_summary(user_id, text, summary, metadata)
+    Database->>SQLite: INSERT INTO summaries
+    Database->>SQLite: COUNT summaries for user
+    alt count > 10000
+        Database->>SQLite: DELETE oldest summaries
+    end
+    SQLite-->>Database: Commit success
+    Database-->>Client: Return

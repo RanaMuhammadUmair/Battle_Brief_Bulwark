@@ -1,0 +1,19 @@
+erDiagram
+    USERS {
+        INTEGER id PK "Auto-increment primary key"
+        TEXT username "Unique text identifier"
+        TEXT full_name "Optional full name"
+        TEXT email "Optional email"
+        TEXT hashed_password "Required bcrypt-hashed password"
+        INTEGER disabled "0/1 flag"
+    }
+    SUMMARIES {
+        INTEGER id PK "Auto-increment primary key"
+        TEXT user_id "User identifier (FK to USERS.id)"
+        TEXT filename "Document name"
+        TEXT plain_text "Original text"
+        TEXT summary "Generated summary"
+        TEXT metadata "JSON metadata"
+        TIMESTAMP created_at "Local timestamp"
+    }
+    USERS ||--o{ SUMMARIES : has
